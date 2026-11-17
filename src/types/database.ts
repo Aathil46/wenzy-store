@@ -133,6 +133,7 @@ export interface Order {
   payment_method: string
   payment_id?: string | null
   notes?: string | null
+  access_token?: string
   created_at: string
   updated_at: string
   items?: OrderItem[]

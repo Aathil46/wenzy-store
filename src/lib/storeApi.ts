@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Category, Order, Product, StoreSettings } from '../types/database'
+import type { Category, Order, OrderStatus, PaymentStatus, Product, ShippingAddressData, StoreSettings } from '../types/database'
 
 // Default fallback settings if DB request fails or is pending
 export const DEFAULT_SETTINGS: StoreSettings = {
@@ -171,97 +171,88 @@ export interface CreateOrderParams {
   customerEmail: string
   customerPhone: string
   customerName: string
-  shippingAddress: {
-    full_name: string
-    phone: string
-    street_address: string
-    apartment?: string
-    city: string
-    state: string
-    postal_code: string
-    country: string
-  }
-  items: {
-    productId: string
-    variantId: string
-    productName: string
-    variantTitle: string
-    price: number
-    quantity: number
-    imageUrl: string
-  }[]
-  subtotal: number
-  shippingFee: number
-  tax: number
-  total: number
+  shippingAddress: ShippingAddressData
   paymentMethod: string
-  paymentId?: string
+  items: {
+    variantId: string
+    quantity: number
+  }[]
   notes?: string
 }
 
-export async function createOrder(params: CreateOrderParams): Promise<{ order?: Order; error?: string }> {
+export interface SecureOrderResult {
+  order_id: string
+  order_number: string
+  access_token: string
+  subtotal: number
+  shipping_fee: number
+  tax: number
+  total: number
+  status: OrderStatus
+  payment_status: PaymentStatus
+}
+
+export async function createOrder(params: CreateOrderParams): Promise<{ order?: SecureOrderResult; error?: string }> {
   try {
-    const orderNumber = 'WNZ-' + Math.floor(100000 + Math.random() * 900000)
-
-    const { data: orderData, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        order_number: orderNumber,
-        user_id: params.userId || null,
-        customer_email: params.customerEmail,
-        customer_phone: params.customerPhone,
-        customer_name: params.customerName,
-        shipping_address: params.shippingAddress,
-        subtotal: params.subtotal,
-        shipping_fee: params.shippingFee,
-        tax: params.tax,
-        total: params.total,
-        status: 'Pending',
-        payment_status: params.paymentMethod === 'Cash on Delivery' ? 'Pending' : 'Paid',
-        payment_method: params.paymentMethod,
-        payment_id: params.paymentId || null,
-        notes: params.notes || null,
-      })
-      .select()
-      .single()
-
-    if (orderError || !orderData) {
-      console.error('Order creation error:', orderError)
-      return { error: orderError?.message || 'Failed to create order' }
-    }
-
-    // Insert order items
-    const orderItems = params.items.map((item) => ({
-      order_id: orderData.id,
-      product_id: item.productId,
-      variant_id: item.variantId,
-      product_name: item.productName,
-      variant_title: item.variantTitle,
-      price: item.price,
-      quantity: item.quantity,
-      image_url: item.imageUrl,
+    const formattedItems = params.items.map((i) => ({
+      variant_id: i.variantId,
+      quantity: i.quantity,
     }))
 
-    const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
-    if (itemsError) {
-      console.error('Order items insertion error:', itemsError)
+    const { data, error } = await supabase.rpc('create_order_secure', {
+      p_customer_name: params.customerName,
+      p_customer_email: params.customerEmail,
+      p_customer_phone: params.customerPhone,
+      p_shipping_address: params.shippingAddress,
+      p_payment_method: params.paymentMethod,
+      p_items: formattedItems,
+      p_notes: params.notes || null,
+    })
+
+    if (error || !data) {
+      console.error('Order creation error:', error)
+      return { error: error?.message || 'Failed to place order securely.' }
     }
 
-    // Safely reduce inventory for ordered variants
-    for (const item of params.items) {
-      try {
-        await supabase.rpc('reduce_inventory', {
-          variant_id: item.variantId,
-          quantity_to_reduce: item.quantity,
-        })
-      } catch (stockErr) {
-        console.warn('Inventory adjustment note for variant', item.variantId, stockErr)
-      }
-    }
-
-    return { order: orderData }
+    return { order: data as SecureOrderResult }
   } catch (err: any) {
     return { error: err.message || 'An unexpected error occurred during checkout' }
+  }
+}
+
+export async function verifyPayment(
+  orderId: string,
+  accessToken: string,
+  paymentId: string,
+  verificationToken = 'sig_sandbox_valid_signature'
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc('verify_payment_secure', {
+      p_order_id: orderId,
+      p_access_token: accessToken,
+      p_payment_id: paymentId,
+      p_verification_token: verificationToken,
+    })
+
+    if (error || !data?.success) {
+      return { success: false, error: error?.message || 'Payment verification failed' }
+    }
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err.message }
+  }
+}
+
+export async function getOrderByAccessToken(orderId: string, accessToken: string): Promise<Order | null> {
+  try {
+    const { data, error } = await supabase.rpc('get_guest_order', {
+      p_order_id: orderId,
+      p_access_token: accessToken,
+    })
+    if (error || !data) return null
+    return data as Order
+  } catch {
+    return null
   }
 }
 
@@ -283,8 +274,13 @@ export async function getCustomerOrders(userId: string): Promise<Order[]> {
   }
 }
 
-export async function getOrderById(orderId: string): Promise<Order | null> {
+export async function getOrderById(orderId: string, accessToken?: string): Promise<Order | null> {
   try {
+    if (accessToken) {
+      const tokenOrder = await getOrderByAccessToken(orderId, accessToken)
+      if (tokenOrder) return tokenOrder
+    }
+
     const { data, error } = await supabase
       .from('orders')
       .select(`
@@ -294,7 +290,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
       .eq('id', orderId)
       .single()
 
-    if (error) return null
+    if (error || !data) return null
     return data
   } catch {
     return null

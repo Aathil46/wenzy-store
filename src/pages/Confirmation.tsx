@@ -1,22 +1,24 @@
 import React, { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { CheckCircle2, Package, Truck, ArrowRight, Loader2, Clock } from 'lucide-react'
+import { useParams, useSearchParams, Link } from 'react-router-dom'
+import { CheckCircle2, Package, Truck, ArrowRight, Loader2, Clock, ShieldAlert } from 'lucide-react'
 import { getOrderById } from '../lib/storeApi'
 import type { Order } from '../types/database'
 
 export default function Confirmation() {
   const { orderId } = useParams<{ orderId: string }>()
+  const [searchParams] = useSearchParams()
+  const token = searchParams.get('token') || undefined
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (orderId) {
-      getOrderById(orderId).then((o) => {
+      getOrderById(orderId, token).then((o) => {
         setOrder(o)
         setLoading(false)
       })
     }
-  }, [orderId])
+  }, [orderId, token])
 
   if (loading) {
     return (
@@ -29,12 +31,22 @@ export default function Confirmation() {
 
   if (!order) {
     return (
-      <div className="wrap py-24 text-center space-y-4">
-        <h1 className="text-2xl font-black uppercase tracking-wider">Order Not Found</h1>
-        <p className="text-xs text-neutral-500">We could not retrieve details for this order reference.</p>
-        <Link to="/shop" className="btn-primary inline-flex">
-          Back to Store
-        </Link>
+      <div className="wrap py-24 text-center space-y-4 max-w-md mx-auto">
+        <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center mx-auto text-neutral-800">
+          <ShieldAlert className="w-6 h-6" />
+        </div>
+        <h1 className="text-2xl font-black uppercase tracking-wider">Access Restricted</h1>
+        <p className="text-xs text-neutral-500 leading-relaxed">
+          Order receipts are protected for customer privacy. If you placed this order as a guest, please use the secure link with access token provided upon checkout. Registered customers can access all previous orders in their account dashboard.
+        </p>
+        <div className="flex justify-center gap-3 pt-2">
+          <Link to="/shop" className="btn-secondary">
+            Back to Store
+          </Link>
+          <Link to="/account" className="btn-primary">
+            Customer Account
+          </Link>
+        </div>
       </div>
     )
   }

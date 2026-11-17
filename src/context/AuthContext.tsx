@@ -38,15 +38,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data) {
         setProfile(data)
       } else if (userEmail) {
-        // Fallback profile if row hasn't synced yet
-        const isAdminEmail =
-          userEmail === 'admin@wenzy.store' ||
-          userEmail === 'admin.wenzy@gmail.com' ||
-          userEmail.endsWith('@wenzy.store')
+        // Authoritative fallback: Default strictly to customer until database profile confirms role
         setProfile({
           id: userId,
           email: userEmail,
-          role: isAdminEmail ? 'admin' : 'customer',
+          role: 'customer',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })

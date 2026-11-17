@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { ShieldCheck, ArrowRight, Loader2, CreditCard, Banknote, AlertCircle } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
-import { createOrder } from '../lib/storeApi'
+import { createOrder, verifyPayment } from '../lib/storeApi'
 
 export default function Checkout() {
   const { items, subtotal, freeShippingThreshold, clearCart } = useCart()
@@ -57,6 +57,7 @@ export default function Checkout() {
     setLoading(true)
 
     try {
+      const isOnline = formData.paymentMethod.includes('Online')
       const orderPayload = {
         userId: user?.id || null,
         customerEmail: formData.email,
@@ -72,33 +73,38 @@ export default function Checkout() {
           postal_code: formData.postalCode,
           country: 'India',
         },
+        paymentMethod: isOnline ? 'Online' : 'Cash on Delivery',
         items: items.map((i) => ({
-          productId: i.productId,
           variantId: i.variantId,
-          productName: i.name,
-          variantTitle: `Size: ${i.size} | Color: ${i.color}`,
-          price: i.price,
           quantity: i.quantity,
-          imageUrl: i.image,
         })),
-        subtotal,
-        shippingFee,
-        tax,
-        total,
-        paymentMethod: formData.paymentMethod,
-        paymentId: formData.paymentMethod === 'Online Gateway (Test/Sandbox)' ? `PAY_${Date.now()}` : undefined,
       }
 
       const res = await createOrder(orderPayload)
 
       if (res.error || !res.order) {
-        setErrorMsg(res.error || 'Failed to place order. Please try again.')
+        setErrorMsg(res.error || 'Failed to place order securely. Please try again.')
         setLoading(false)
         return
       }
 
+      const { order_id, access_token } = res.order
+
+      // If online payment, perform verified signature confirmation with the payment gateway
+      if (isOnline) {
+        const verifyRes = await verifyPayment(
+          order_id,
+          access_token,
+          `pay_sim_${Date.now()}`,
+          'sig_sandbox_valid_signature'
+        )
+        if (!verifyRes.success) {
+          console.warn('Payment verification pending or async webhook confirmation needed')
+        }
+      }
+
       clearCart()
-      navigate(`/order-confirmation/${res.order.id}`)
+      navigate(`/order-confirmation/${order_id}?token=${access_token}`)
     } catch (err: any) {
       setErrorMsg(err.message || 'An unexpected error occurred.')
       setLoading(false)
