@@ -90,7 +90,7 @@ export default function CartDrawer() {
                   }}
                   className="btn-primary"
                 >
-                  Shop T-Shirts
+                  Explore Collection
                 </button>
               </div>
             ) : (

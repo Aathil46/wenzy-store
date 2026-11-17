@@ -31,7 +31,7 @@ export default function Checkout() {
         <h1 className="text-2xl font-black uppercase tracking-wider">No Items to Checkout</h1>
         <p className="text-xs text-neutral-500">Your shopping bag is empty.</p>
         <Link to="/shop" className="btn-primary inline-flex">
-          Explore T-Shirts
+          Explore Products
         </Link>
       </div>
     )

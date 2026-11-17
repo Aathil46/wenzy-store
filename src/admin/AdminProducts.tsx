@@ -84,8 +84,8 @@ export default function AdminProducts() {
       name: '',
       slug: '',
       description: '',
-      price: 999,
-      compare_at_price: 1799,
+      price: 0,
+      compare_at_price: 0,
       category_id: categories[0]?.id || '',
       is_active: true,
       is_featured: false,
@@ -95,15 +95,13 @@ export default function AdminProducts() {
       fit: 'Oversized Drop-Shoulder Fit',
       care: 'Machine wash cold inside out. Do not iron on print.',
     })
-    setImages([
-      { image_url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1000&q=80', is_primary: true },
-    ])
+    setImages([])
     setVariants(
       DEFAULT_SIZES.map((s) => ({
         size: s,
         color: 'Black',
-        sku: `WNZ-${s}`,
-        stock_quantity: 15,
+        sku: '',
+        stock_quantity: 0,
       }))
     )
     setErrorMsg('')
@@ -483,7 +481,7 @@ export default function AdminProducts() {
                         required
                         value={formData.name}
                         onChange={(e) => handleNameChange(e.target.value)}
-                        placeholder="e.g. WENZY Doomsday Oversized T-Shirt"
+                        placeholder="e.g. Oversized Graphic T-Shirt"
                         className="input-field"
                       />
                     </div>
@@ -497,7 +495,7 @@ export default function AdminProducts() {
                         required
                         value={formData.slug}
                         onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
-                        placeholder="wenzy-doomsday-oversized-t-shirt"
+                        placeholder="oversized-graphic-t-shirt"
                         className="input-field font-mono"
                       />
                     </div>
@@ -507,17 +505,27 @@ export default function AdminProducts() {
                     <label className="block text-neutral-600 uppercase font-bold text-[10px] mb-1">
                       Category Assignment *
                     </label>
-                    <select
-                      value={formData.category_id}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, category_id: e.target.value }))}
-                      className="input-field cursor-pointer"
-                    >
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} {c.is_active ? '' : '(Inactive)'}
-                        </option>
-                      ))}
-                    </select>
+                    {categories.length === 0 ? (
+                      <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between">
+                        <span>No categories found in database. Create a category first.</span>
+                        <Link to="/admin/categories" className="btn-primary py-1 px-3 text-[10px]">
+                          Create Category
+                        </Link>
+                      </div>
+                    ) : (
+                      <select
+                        value={formData.category_id}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, category_id: e.target.value }))}
+                        className="input-field cursor-pointer"
+                      >
+                        <option value="">Select a Category</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} {c.is_active ? '' : '(Inactive)'}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
 
                   <div>

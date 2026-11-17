@@ -30,7 +30,7 @@ export default function Cart() {
           </p>
         </div>
         <Link to="/shop" className="btn-primary inline-flex">
-          Explore T-Shirts
+          Explore Collection
         </Link>
       </div>
     )

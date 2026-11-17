@@ -146,7 +146,7 @@ export default function AdminCategories() {
             Category Management
           </h1>
           <p className="text-xs text-neutral-500 uppercase tracking-wider mt-1">
-            Dynamic categories fetched from Supabase. Launch configured with T-Shirts.
+            Dynamic categories fetched from Supabase. Create and manage product collections.
           </p>
         </div>
 

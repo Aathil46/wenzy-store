@@ -94,6 +94,10 @@ async function runSecurityAudit() {
   // ----------------------------------------------------
   console.log('\n--- 2. Testing Secure Guest Order Tracking ---');
 
+  // Fetch a live variant dynamically from real database
+  const { data: activeVariants } = await anonClient.from('product_variants').select('id').gt('stock_quantity', 0).limit(1);
+  const testVariantId = activeVariants?.[0]?.id;
+
   // Place a secure guest order
   const { data: guestOrderRes, error: guestOrderErr } = await anonClient.rpc('create_order_secure', {
     p_customer_name: 'Priya Patel',
@@ -107,7 +111,7 @@ async function runSecurityAudit() {
       country: 'India'
     },
     p_payment_method: 'Cash on Delivery',
-    p_items: [{ variant_id: '27e8e94e-ab90-4d96-a9b2-6830797f5d34', quantity: 1 }],
+    p_items: [{ variant_id: testVariantId, quantity: 1 }],
     p_notes: 'Ring bell upon arrival'
   });
 

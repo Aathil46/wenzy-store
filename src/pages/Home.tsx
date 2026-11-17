@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Star, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowRight, Star, ShieldCheck, Sparkles, AlertCircle, RefreshCw } from 'lucide-react'
 import ProductCard from '../components/ProductCard'
 import { getCategories, getProducts } from '../lib/storeApi'
 import type { Category, Product } from '../types/database'
@@ -9,22 +9,27 @@ export default function Home() {
   const [categories, setCategories] = useState<Category[]>([])
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadData = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const [cats, prods] = await Promise.all([
+        getCategories(true),
+        getProducts({ isFeatured: true }),
+      ])
+      setCategories(cats)
+      setFeaturedProducts(prods)
+    } catch (err: any) {
+      console.error('Home load error:', err)
+      setError(err.message || 'Unable to load products from database.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const [cats, prods] = await Promise.all([
-          getCategories(true),
-          getProducts({ isFeatured: true }),
-        ])
-        setCategories(cats)
-        setFeaturedProducts(prods)
-      } catch (err) {
-        console.error('Home load error:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
     loadData()
   }, [])
 
@@ -46,7 +51,7 @@ export default function Home() {
         <div className="wrap relative z-10 py-20 flex flex-col items-start justify-center max-w-4xl space-y-6">
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded border border-white/20 font-accent text-xs font-bold uppercase tracking-widest text-white">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>SEASON 01 • THE DOOMSDAY DROP</span>
+            <span>SEASON 01 • INAUGURAL DROP</span>
           </div>
 
           <h1 className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight leading-[0.95] uppercase text-white">
@@ -63,74 +68,79 @@ export default function Home() {
 
           <div className="flex flex-wrap items-center gap-4 pt-4">
             <Link to="/shop" className="btn-primary bg-white text-black hover:bg-neutral-200 hover:text-black">
-              <span>EXPLORE ALL TEES</span>
+              <span>EXPLORE COLLECTION</span>
               <ArrowRight className="w-4 h-4 ml-1" />
             </Link>
             <Link
-              to="/product/wenzy-doomsday-edition-oversized-t-shirt"
+              to="/about"
               className="inline-flex h-12 items-center justify-center gap-2 border border-white bg-transparent px-6 text-xs font-bold uppercase tracking-[0.16em] text-white transition-all duration-200 hover:bg-white hover:text-black active:scale-[0.98]"
             >
-              DOOMSDAY EDITION
+              BRAND STORY
             </Link>
           </div>
         </div>
       </section>
 
-      {/* 2. Launch Category Spotlight (Strict Single Category: T-Shirts) */}
-      <section className="py-12 border-b border-neutral-200 bg-neutral-50">
-        <div className="wrap">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-neutral-500">
-                Core Catalog
-              </div>
-              <h2 className="text-2xl font-black uppercase tracking-tight text-black mt-1">
-                Shop By Category
-              </h2>
-            </div>
-            <Link
-              to="/shop"
-              className="text-xs font-bold uppercase tracking-[0.16em] text-black hover:opacity-60 flex items-center gap-1"
-            >
-              <span>View Catalog</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {categories.map((cat) => (
-              <Link
-                key={cat.id}
-                to={`/category/${cat.slug}`}
-                className="group relative block aspect-[16/9] md:aspect-[4/3] overflow-hidden bg-neutral-900 border border-neutral-200 shadow-sm"
-              >
-                <img
-                  src={
-                    cat.image_url ||
-                    'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=80'
-                  }
-                  alt={cat.name}
-                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 opacity-70 group-hover:opacity-85"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between">
-                  <div>
-                    <span className="font-accent text-[11px] font-bold text-neutral-300 uppercase tracking-widest">
-                      Current Launch Category
-                    </span>
-                    <h3 className="font-heading font-black text-2xl text-white uppercase tracking-wider mt-0.5">
-                      {cat.name}
-                    </h3>
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center group-hover:translate-x-1 transition-transform">
-                    <ArrowRight className="w-4 h-4" />
-                  </div>
+      {/* 2. Category Spotlight (Dynamically rendered only if categories exist in database) */}
+      {categories.length > 0 && (
+        <section className="py-12 border-b border-neutral-200 bg-neutral-50">
+          <div className="wrap">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-neutral-500">
+                  Core Catalog
                 </div>
+                <h2 className="text-2xl font-black uppercase tracking-tight text-black mt-1">
+                  Shop By Category
+                </h2>
+              </div>
+              <Link
+                to="/shop"
+                className="text-xs font-bold uppercase tracking-[0.16em] text-black hover:opacity-60 flex items-center gap-1"
+              >
+                <span>View Catalog</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </Link>
-            ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {categories.map((cat) => (
+                <Link
+                  key={cat.id}
+                  to={`/category/${cat.slug}`}
+                  className="group relative block aspect-[16/9] md:aspect-[4/3] overflow-hidden bg-neutral-900 border border-neutral-200 shadow-sm"
+                >
+                  {cat.image_url ? (
+                    <img
+                      src={cat.image_url}
+                      alt={cat.name}
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 opacity-70 group-hover:opacity-85"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-neutral-900 flex items-center justify-center text-neutral-400 text-xs font-bold uppercase tracking-widest">
+                      {cat.name}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between">
+                    <div>
+                      <h3 className="font-heading font-black text-2xl text-white uppercase tracking-wider mt-0.5">
+                        {cat.name}
+                      </h3>
+                      {cat.description && (
+                        <p className="text-xs text-neutral-300 line-clamp-1 mt-1">{cat.description}</p>
+                      )}
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 3. Featured Drops Section */}
       <section className="py-16 md:py-24">
@@ -153,8 +163,20 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Product Grid (4 columns desktop, 2 columns mobile) */}
-          {loading ? (
+          {/* Product Grid / Error / Empty States */}
+          {error ? (
+            <div className="py-16 text-center max-w-md mx-auto space-y-4 bg-red-50/50 p-8 border border-red-200">
+              <AlertCircle className="w-8 h-8 text-red-600 mx-auto" />
+              <div className="text-sm font-bold uppercase tracking-wider text-red-900">
+                Database Connection Error
+              </div>
+              <p className="text-xs text-red-700 leading-relaxed">{error}</p>
+              <button onClick={loadData} className="btn-secondary inline-flex items-center gap-2 text-xs">
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Retry Connection</span>
+              </button>
+            </div>
+          ) : loading ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
               {[1, 2, 3, 4].map((n) => (
                 <div key={n} className="animate-pulse space-y-3">
@@ -165,8 +187,19 @@ export default function Home() {
               ))}
             </div>
           ) : featuredProducts.length === 0 ? (
-            <div className="text-center py-16 text-neutral-500 text-sm">
-              No products found in this drop.
+            <div className="py-20 text-center max-w-md mx-auto space-y-4">
+              <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto text-neutral-400">
+                <Sparkles className="w-8 h-8" />
+              </div>
+              <h3 className="font-heading font-black text-2xl uppercase tracking-tight text-black">
+                Products Coming Soon
+              </h3>
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                We are currently engineering our inaugural streetwear drop. Stay tuned for new releases.
+              </p>
+              <Link to="/about" className="btn-secondary inline-flex text-xs">
+                Brand Story & Philosophy
+              </Link>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-6 sm:gap-y-12">
@@ -257,7 +290,7 @@ export default function Home() {
                 ))}
               </div>
               <div className="text-xs font-bold uppercase tracking-wider text-black">
-                "The Doomsday Print is Wild"
+                "The Graphic Print is Wild"
               </div>
               <p className="text-xs text-neutral-600 leading-relaxed">
                 High-density puff and clean lines. Everyone asked where I got this tee. Shipped in 2 days to Bangalore.

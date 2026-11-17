@@ -91,18 +91,13 @@ export default function Footer() {
               </Link>
             </li>
             <li>
-              <Link to="/category/t-shirts" className="hover:text-white transition-colors">
-                T-Shirts Drop
-              </Link>
-            </li>
-            <li>
               <Link to="/shop?sort=newest" className="hover:text-white transition-colors">
                 New Arrivals
               </Link>
             </li>
             <li>
               <Link to="/shop?sort=featured" className="hover:text-white transition-colors">
-                Best Sellers
+                Featured Pieces
               </Link>
             </li>
           </ul>

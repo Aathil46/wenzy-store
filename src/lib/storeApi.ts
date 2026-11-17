@@ -36,21 +36,16 @@ export async function getStoreSettings(): Promise<StoreSettings> {
 }
 
 export async function getCategories(onlyActive = true): Promise<Category[]> {
-  try {
-    let query = supabase.from('categories').select('*').order('display_order', { ascending: true })
-    if (onlyActive) {
-      query = query.eq('is_active', true)
-    }
-    const { data, error } = await query
-    if (error) {
-      console.error('Error fetching categories:', error)
-      return []
-    }
-    return data || []
-  } catch (err) {
-    console.error('getCategories exception:', err)
-    return []
+  let query = supabase.from('categories').select('*').order('display_order', { ascending: true })
+  if (onlyActive) {
+    query = query.eq('is_active', true)
   }
+  const { data, error } = await query
+  if (error) {
+    console.error('Error fetching categories:', error)
+    throw error
+  }
+  return data || []
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
@@ -76,8 +71,7 @@ export interface ProductFilters {
 }
 
 export async function getProducts(filters?: ProductFilters): Promise<Product[]> {
-  try {
-    let query = supabase
+  let query = supabase
       .from('products')
       .select(`
         *,
@@ -109,32 +103,28 @@ export async function getProducts(filters?: ProductFilters): Promise<Product[]> 
       query = query.order('is_featured', { ascending: false }).order('created_at', { ascending: false })
     }
 
-    const { data, error } = await query
+  const { data, error } = await query
 
-    if (error) {
-      console.error('Error fetching products:', error)
-      return []
-    }
-
-    let results = (data as Product[]) || []
-
-    // If filtered by category slug, apply filter
-    if (filters?.categorySlug && filters.categorySlug !== 'all') {
-      results = results.filter((p) => p.category?.slug === filters.categorySlug)
-    }
-
-    // Sort product images by display_order
-    results.forEach((p) => {
-      if (p.images) {
-        p.images.sort((a, b) => a.display_order - b.display_order)
-      }
-    })
-
-    return results
-  } catch (err) {
-    console.error('getProducts exception:', err)
-    return []
+  if (error) {
+    console.error('Error fetching products:', error)
+    throw error
   }
+
+  let results = (data as Product[]) || []
+
+  // If filtered by category slug, apply filter
+  if (filters?.categorySlug && filters.categorySlug !== 'all') {
+    results = results.filter((p) => p.category?.slug === filters.categorySlug)
+  }
+
+  // Sort product images by display_order
+  results.forEach((p) => {
+    if (p.images) {
+      p.images.sort((a, b) => a.display_order - b.display_order)
+    }
+  })
+
+  return results
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {

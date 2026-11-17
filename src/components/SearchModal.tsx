@@ -1,18 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, X, ArrowRight, Loader2 } from 'lucide-react'
-import { getProducts } from '../lib/storeApi'
-import type { Product } from '../types/database'
+import { getCategories, getProducts } from '../lib/storeApi'
+import type { Category, Product } from '../types/database'
 
 interface SearchModalProps {
   isOpen: boolean
   onClose: () => void
 }
 
-const QUICK_TAGS = ['Doomsday', 'Acid Wash', 'Oversized', 'Cyber Spider', 'Limitless']
-
 export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [query, setQuery] = useState('')
+  const [categories, setCategories] = useState<Category[]>([])
   const [results, setResults] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -21,6 +20,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 50)
       document.body.style.overflow = 'hidden'
+      getCategories(true).then(setCategories).catch(() => {})
     } else {
       document.body.style.overflow = 'unset'
       setQuery('')
@@ -82,27 +82,29 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="SEARCH HEAVYWEIGHT TEES..."
+                placeholder="SEARCH STREETWEAR APPAREL..."
                 className="w-full text-base sm:text-lg font-bold tracking-wider placeholder-neutral-400 uppercase outline-none"
               />
               {loading && <Loader2 className="w-5 h-5 animate-spin text-neutral-500 ml-2 shrink-0" />}
             </div>
 
-            {/* Quick Search Tag Shortcuts */}
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
-                Trending:
-              </span>
-              {QUICK_TAGS.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => setQuery(tag)}
-                  className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider bg-neutral-100 hover:bg-black hover:text-white transition-colors"
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
+            {/* Quick Search Tag Shortcuts (Dynamic Categories from Supabase) */}
+            {categories.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+                  Collections:
+                </span>
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setQuery(cat.name)}
+                    className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider bg-neutral-100 hover:bg-black hover:text-white transition-colors"
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Search Results Display */}
@@ -115,7 +117,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
               <div className="py-12 text-center space-y-2">
                 <div className="text-sm font-bold uppercase tracking-wider">No products found</div>
                 <p className="text-xs text-neutral-500">
-                  Try searching for "Doomsday", "Oversized", or "Acid Wash".
+                  No catalog items match your search. Check back soon for new releases.
                 </p>
               </div>
             ) : (

@@ -16,11 +16,22 @@ import { adminGetDashboardMetrics } from '../lib/storeApi'
 export default function AdminDashboard() {
   const [metrics, setMetrics] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const loadMetrics = () => {
+    setLoading(true)
+    setError(null)
     adminGetDashboardMetrics()
       .then(setMetrics)
+      .catch((err: any) => {
+        console.error('Failed to load metrics:', err)
+        setError(err.message || 'Unable to connect to Supabase database.')
+      })
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadMetrics()
   }, [])
 
   if (loading) {
@@ -30,6 +41,20 @@ export default function AdminDashboard() {
         <div className="text-xs uppercase font-bold tracking-widest text-neutral-400">
           Compiling Real-Time Database Metrics...
         </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 bg-red-50 border border-red-200 text-center space-y-3 max-w-lg mx-auto my-12">
+        <div className="text-sm font-bold uppercase tracking-wider text-red-900">
+          Database Connection Error
+        </div>
+        <p className="text-xs text-red-700 leading-relaxed">{error}</p>
+        <button onClick={loadMetrics} className="btn-secondary text-xs">
+          Retry
+        </button>
       </div>
     )
   }
@@ -87,7 +112,7 @@ export default function AdminDashboard() {
             {metrics?.totalProducts || 0}
           </div>
           <div className="text-[11px] text-neutral-500">
-            Active category: T-Shirts ({metrics?.totalCategories || 1})
+            {metrics?.totalCategories || 0} active categories configured
           </div>
         </div>
 
