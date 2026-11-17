@@ -18,6 +18,7 @@ export interface Category {
   image_url?: string | null
   is_active: boolean
   display_order: number
+  show_in_header?: boolean
   created_at: string
   updated_at: string
   // Virtual count computed or joined
@@ -174,6 +175,9 @@ export type BannerMediaType = 'image' | 'video'
 export type BannerDestinationType = 'product' | 'category' | 'custom_url' | 'none'
 export type BannerVideoAdvanceMode = 'duration' | 'on_end'
 export type BannerTextAlignment = 'left' | 'center' | 'right'
+export type BannerAspectRatio = 'banner' | 'widescreen' | 'ultrawide' | 'square' | 'portrait' | 'custom'
+export type BannerObjectFit = 'cover' | 'contain'
+export type BannerObjectPosition = 'center' | 'top' | 'bottom'
 
 export interface StorefrontBanner {
   id: string
@@ -194,6 +198,10 @@ export interface StorefrontBanner {
   overlay_opacity: number
   text_alignment: BannerTextAlignment
   text_color: string
+  aspect_ratio?: BannerAspectRatio
+  custom_height?: number
+  object_fit?: BannerObjectFit
+  object_position?: BannerObjectPosition
   is_active: boolean
   created_at: string
   updated_at: string

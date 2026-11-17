@@ -34,10 +34,13 @@ export async function getStoreSettings(): Promise<StoreSettings> {
   }
 }
 
-export async function getCategories(onlyActive = true): Promise<Category[]> {
+export async function getCategories(onlyActive = true, onlyHeader = false): Promise<Category[]> {
   let query = supabase.from('categories').select('*').order('display_order', { ascending: true })
   if (onlyActive) {
     query = query.eq('is_active', true)
+  }
+  if (onlyHeader) {
+    query = query.eq('show_in_header', true)
   }
   const { data, error } = await query
   if (error) {
@@ -464,6 +467,7 @@ export async function adminSaveCategory(category: Partial<Category>) {
         image_url: category.image_url || null,
         is_active: category.is_active ?? true,
         display_order: category.display_order ?? 0,
+        show_in_header: category.show_in_header ?? true,
       })
       .select()
       .single()
@@ -479,6 +483,7 @@ export async function adminSaveCategory(category: Partial<Category>) {
         image_url: category.image_url || null,
         is_active: category.is_active ?? true,
         display_order: category.display_order ?? 0,
+        show_in_header: category.show_in_header ?? true,
         updated_at: new Date().toISOString(),
       })
       .eq('id', category.id)
@@ -626,6 +631,10 @@ export async function adminSaveBanner(banner: Partial<StorefrontBanner>): Promis
     overlay_opacity: banner.overlay_opacity ?? 0.4,
     text_alignment: banner.text_alignment || 'left',
     text_color: banner.text_color || '#FFFFFF',
+    aspect_ratio: banner.aspect_ratio || 'banner',
+    custom_height: banner.custom_height ?? 480,
+    object_fit: banner.object_fit || 'cover',
+    object_position: banner.object_position || 'center',
     is_active: banner.is_active ?? true,
     updated_at: new Date().toISOString(),
   }

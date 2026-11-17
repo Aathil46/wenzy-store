@@ -160,9 +160,35 @@ export default function HeroBannerCarousel({ banners }: HeroBannerCarouselProps)
   const destinationLink = activeBanner ? getDestinationLink(activeBanner) : null
   const isExternal = destinationLink?.startsWith('http')
 
+  const getBannerHeightClass = (banner?: StorefrontBanner) => {
+    if (!banner) return 'h-[240px] sm:h-[340px] md:h-[420px] lg:h-[480px] xl:h-[520px]'
+    switch (banner.aspect_ratio) {
+      case 'square':
+        return 'h-[340px] sm:h-[460px] md:h-[520px] lg:h-[580px]'
+      case 'portrait':
+        return 'h-[380px] sm:h-[500px] md:h-[600px] lg:h-[680px]'
+      case 'widescreen':
+        return 'h-[240px] sm:h-[360px] md:h-[460px] lg:h-[540px]'
+      case 'ultrawide':
+        return 'h-[200px] sm:h-[280px] md:h-[360px] lg:h-[420px]'
+      case 'custom':
+        return ''
+      case 'banner':
+      default:
+        return 'h-[240px] sm:h-[340px] md:h-[420px] lg:h-[480px] xl:h-[520px]'
+    }
+  }
+
+  const sectionHeightClass = getBannerHeightClass(activeBanner)
+  const customSectionStyle =
+    activeBanner?.aspect_ratio === 'custom' && activeBanner?.custom_height
+      ? { height: `${activeBanner.custom_height}px` }
+      : undefined
+
   return (
     <section
-      className="relative w-full h-[240px] sm:h-[340px] md:h-[420px] lg:h-[480px] xl:h-[520px] bg-neutral-950 text-white flex items-center overflow-hidden select-none outline-none"
+      className={`relative w-full ${sectionHeightClass} bg-neutral-950 text-white flex items-center overflow-hidden select-none outline-none transition-all duration-500`}
+      style={customSectionStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onKeyDown={handleKeyDown}
@@ -180,11 +206,20 @@ export default function HeroBannerCarousel({ banners }: HeroBannerCarouselProps)
         const slideLink = getDestinationLink(banner)
         const slideIsExternal = slideLink?.startsWith('http')
 
+        // Framing & focal classes
+        const fitClass = banner.object_fit === 'contain' ? 'object-contain' : 'object-cover'
+        const posClass =
+          banner.object_position === 'top'
+            ? 'object-top'
+            : banner.object_position === 'bottom'
+            ? 'object-bottom'
+            : 'object-center'
+
         // Slide inner media element
         const MediaContent = (
-          <div className="relative w-full h-full">
+          <div className="relative w-full h-full bg-neutral-950 flex items-center justify-center">
             {banner.media_type === 'video' ? (
-              <div className="absolute inset-0 w-full h-full overflow-hidden">
+              <div className="absolute inset-0 w-full h-full overflow-hidden flex items-center justify-center">
                 <video
                   ref={(el) => (videoRefs.current[index] = el)}
                   src={desktopUrl}
@@ -197,7 +232,7 @@ export default function HeroBannerCarousel({ banners }: HeroBannerCarouselProps)
                       goToNext()
                     }
                   }}
-                  className={`w-full h-full object-cover object-center ${
+                  className={`w-full h-full ${fitClass} ${posClass} ${
                     banner.mobile_media_path ? 'hidden md:block' : 'block'
                   }`}
                 />
@@ -213,19 +248,19 @@ export default function HeroBannerCarousel({ banners }: HeroBannerCarouselProps)
                         goToNext()
                       }
                     }}
-                    className="w-full h-full object-cover object-center md:hidden"
+                    className={`w-full h-full ${fitClass} ${posClass} md:hidden`}
                   />
                 )}
               </div>
             ) : (
-              <picture className="absolute inset-0 w-full h-full">
+              <picture className="absolute inset-0 w-full h-full flex items-center justify-center">
                 {banner.mobile_media_path && (
                   <source media="(max-width: 767px)" srcSet={mobileUrl} />
                 )}
                 <img
                   src={desktopUrl}
                   alt={banner.heading || banner.title || 'WENZY Promotional Banner'}
-                  className="w-full h-full object-cover object-center"
+                  className={`w-full h-full ${fitClass} ${posClass}`}
                   loading={index === 0 ? 'eager' : 'lazy'}
                 />
               </picture>

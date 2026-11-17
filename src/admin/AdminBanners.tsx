@@ -176,6 +176,11 @@ function SortableBannerItem({
                 : `${(banner.duration_ms / 1000).toFixed(1)}s`}
             </span>
 
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono bg-neutral-100 text-neutral-700 px-1.5 py-0.5 border border-neutral-200 uppercase font-bold">
+              {banner.aspect_ratio || 'Banner (3.2:1)'}
+              {banner.object_fit === 'contain' ? ' • Fit' : ''}
+            </span>
+
             {banner.mobile_media_path && (
               <span className="text-[10px] bg-neutral-100 text-neutral-600 px-1.5 py-0.5 font-bold uppercase tracking-wider">
                 Mobile Media

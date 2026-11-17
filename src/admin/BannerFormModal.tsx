@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { X, Upload, Loader2, AlertCircle, Image as ImageIcon, Video, Check, Film } from 'lucide-react'
+import {
+  X,
+  Upload,
+  Loader2,
+  AlertCircle,
+  Image as ImageIcon,
+  Video,
+  Check,
+  Sliders,
+  Crop,
+  Maximize2,
+  Eye,
+} from 'lucide-react'
 import {
   adminSaveBanner,
   uploadBannerMedia,
@@ -13,6 +25,9 @@ import type {
   BannerDestinationType,
   BannerVideoAdvanceMode,
   BannerTextAlignment,
+  BannerAspectRatio,
+  BannerObjectFit,
+  BannerObjectPosition,
   Category,
   Product,
 } from '../types/database'
@@ -56,10 +71,16 @@ export default function BannerFormModal({
   const [displayOrder, setDisplayOrder] = useState(1)
   const [durationMs, setDurationMs] = useState(5000)
   const [videoAdvanceMode, setVideoAdvanceMode] = useState<BannerVideoAdvanceMode>('duration')
-  const [overlayOpacity, setOverlayOpacity] = useState(0.4)
+  const [overlayOpacity, setOverlayOpacity] = useState(0)
   const [textAlignment, setTextAlignment] = useState<BannerTextAlignment>('left')
   const [textColor, setTextColor] = useState('#FFFFFF')
   const [isActive, setIsActive] = useState(true)
+
+  // Instagram-Style Framing & Ratio Controls
+  const [aspectRatio, setAspectRatio] = useState<BannerAspectRatio>('banner')
+  const [customHeight, setCustomHeight] = useState(480)
+  const [objectFit, setObjectFit] = useState<BannerObjectFit>('cover')
+  const [objectPosition, setObjectPosition] = useState<BannerObjectPosition>('center')
 
   // Load categories and products for destination selection
   useEffect(() => {
@@ -101,9 +122,13 @@ export default function BannerFormModal({
       setDisplayOrder(editingBanner.display_order)
       setDurationMs(editingBanner.duration_ms)
       setVideoAdvanceMode(editingBanner.video_advance_mode)
-      setOverlayOpacity(editingBanner.overlay_opacity)
+      setOverlayOpacity(editingBanner.overlay_opacity ?? 0)
       setTextAlignment(editingBanner.text_alignment)
       setTextColor(editingBanner.text_color || '#FFFFFF')
+      setAspectRatio(editingBanner.aspect_ratio || 'banner')
+      setCustomHeight(editingBanner.custom_height ?? 480)
+      setObjectFit(editingBanner.object_fit || 'cover')
+      setObjectPosition(editingBanner.object_position || 'center')
       setIsActive(editingBanner.is_active)
     } else {
       setTitle('')
@@ -120,9 +145,13 @@ export default function BannerFormModal({
       setDisplayOrder(currentCount + 1)
       setDurationMs(5000)
       setVideoAdvanceMode('duration')
-      setOverlayOpacity(0.4)
+      setOverlayOpacity(0)
       setTextAlignment('left')
       setTextColor('#FFFFFF')
+      setAspectRatio('banner')
+      setCustomHeight(480)
+      setObjectFit('cover')
+      setObjectPosition('center')
       setIsActive(true)
     }
     setErrorMsg('')
@@ -138,7 +167,6 @@ export default function BannerFormModal({
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate mime type
     if (mediaType === 'image') {
       const validImages = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
       if (!validImages.includes(file.type)) {
@@ -224,6 +252,10 @@ export default function BannerFormModal({
         overlay_opacity: Number(overlayOpacity),
         text_alignment: textAlignment,
         text_color: textColor || '#FFFFFF',
+        aspect_ratio: aspectRatio,
+        custom_height: Number(customHeight) || 480,
+        object_fit: objectFit,
+        object_position: objectPosition,
         is_active: isActive,
       })
 
@@ -241,16 +273,16 @@ export default function BannerFormModal({
   const mobilePreviewUrl = mobileMediaPath ? getBannerPublicUrl(mobileMediaPath) : ''
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="relative w-full max-w-3xl bg-white border border-neutral-200 shadow-2xl rounded-none my-8 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="relative w-full max-w-3xl bg-white border border-neutral-200 shadow-2xl rounded-none my-8 max-h-[92vh] flex flex-col">
         {/* Modal Header */}
-        <div className="px-6 py-5 border-b border-neutral-200 flex items-center justify-between bg-neutral-50 sticky top-0 z-20">
+        <div className="px-6 py-4 border-b border-neutral-200 flex items-center justify-between bg-neutral-50 sticky top-0 z-20">
           <div>
-            <h2 className="text-lg font-black uppercase tracking-wider text-black">
+            <h2 className="text-base sm:text-lg font-black uppercase tracking-wider text-black">
               {editingBanner ? 'Edit Banner Slide' : 'Create New Banner Slide'}
             </h2>
-            <p className="text-xs text-neutral-500 uppercase tracking-wider mt-0.5">
-              Configure hero media, typography, destination link, and playback rules.
+            <p className="text-[11px] text-neutral-500 uppercase tracking-wider mt-0.5">
+              Configure media, Instagram-style framing presets, destination links, and playback behavior.
             </p>
           </div>
           <button
@@ -272,8 +304,8 @@ export default function BannerFormModal({
 
           {/* Section 1: Basic Info */}
           <div className="space-y-4">
-            <h3 className="font-bold uppercase tracking-wider text-neutral-900 border-b border-neutral-200 pb-1">
-              1. Slide Information
+            <h3 className="font-bold uppercase tracking-wider text-neutral-900 border-b border-neutral-200 pb-1 flex items-center justify-between">
+              <span>1. Slide Information</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -284,7 +316,7 @@ export default function BannerFormModal({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Winter Drop Hero Slide"
+                  placeholder="e.g. DOOM IS HERE Drop 9"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="input-field w-full text-xs"
@@ -293,7 +325,7 @@ export default function BannerFormModal({
 
               <div className="space-y-1">
                 <label className="block font-bold uppercase tracking-wider text-neutral-700">
-                  Active Status
+                  Storefront Visibility
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer pt-2">
                   <input
@@ -303,7 +335,7 @@ export default function BannerFormModal({
                     className="w-4 h-4 accent-black rounded-none cursor-pointer"
                   />
                   <span className="text-xs font-semibold uppercase tracking-wider text-neutral-800">
-                    Visible on Storefront
+                    Active & Published
                   </span>
                 </label>
               </div>
@@ -311,11 +343,11 @@ export default function BannerFormModal({
 
             <div className="space-y-1">
               <label className="block font-bold uppercase tracking-wider text-neutral-700">
-                Editorial Heading (Storefront Display)
+                Editorial Heading <span className="text-neutral-400 font-normal">(Optional — leave blank if graphic creative already has text)</span>
               </label>
               <input
                 type="text"
-                placeholder="e.g. WEAR YOUR LIMITLESS EDGE."
+                placeholder="e.g. PHASE 1 | DROP 9"
                 value={heading}
                 onChange={(e) => setHeading(e.target.value)}
                 className="input-field w-full text-xs font-bold"
@@ -324,11 +356,11 @@ export default function BannerFormModal({
 
             <div className="space-y-1">
               <label className="block font-bold uppercase tracking-wider text-neutral-700">
-                Description / Subtitle
+                Description / Subtitle <span className="text-neutral-400 font-normal">(Optional)</span>
               </label>
               <textarea
                 rows={2}
-                placeholder="e.g. Heavyweight 240+ GSM silhouettes engineered for modern streetwear."
+                placeholder="e.g. Member early access live now..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="input-field w-full text-xs"
@@ -337,11 +369,11 @@ export default function BannerFormModal({
 
             <div className="space-y-1">
               <label className="block font-bold uppercase tracking-wider text-neutral-700">
-                Button Text (Call to Action)
+                Button Text <span className="text-neutral-400 font-normal">(Optional CTA)</span>
               </label>
               <input
                 type="text"
-                placeholder="e.g. EXPLORE COLLECTION"
+                placeholder="e.g. SHOP NOW"
                 value={buttonText}
                 onChange={(e) => setButtonText(e.target.value)}
                 className="input-field w-full text-xs font-semibold"
@@ -349,7 +381,7 @@ export default function BannerFormModal({
             </div>
           </div>
 
-          {/* Section 2: Media Configuration */}
+          {/* Section 2: Media Upload */}
           <div className="space-y-4">
             <h3 className="font-bold uppercase tracking-wider text-neutral-900 border-b border-neutral-200 pb-1">
               2. Media & Uploads
@@ -366,7 +398,7 @@ export default function BannerFormModal({
                   onClick={() => setMediaType('image')}
                   className={`flex items-center justify-center gap-2 p-2.5 border transition-all text-xs font-bold uppercase tracking-wider ${
                     mediaType === 'image'
-                      ? 'bg-black text-white border-black shadow'
+                      ? 'bg-black text-white border-black shadow-xs'
                       : 'bg-neutral-50 text-neutral-600 border-neutral-300 hover:bg-neutral-100'
                   }`}
                 >
@@ -378,7 +410,7 @@ export default function BannerFormModal({
                   onClick={() => setMediaType('video')}
                   className={`flex items-center justify-center gap-2 p-2.5 border transition-all text-xs font-bold uppercase tracking-wider ${
                     mediaType === 'video'
-                      ? 'bg-black text-white border-black shadow'
+                      ? 'bg-black text-white border-black shadow-xs'
                       : 'bg-neutral-50 text-neutral-600 border-neutral-300 hover:bg-neutral-100'
                   }`}
                 >
@@ -395,7 +427,6 @@ export default function BannerFormModal({
               </label>
 
               <div className="flex flex-col sm:flex-row gap-4 items-start">
-                {/* Upload Button */}
                 <div className="flex-1 w-full space-y-2">
                   <label className="flex flex-col items-center justify-center border-2 border-dashed border-neutral-300 hover:border-black p-4 text-center cursor-pointer bg-neutral-50 hover:bg-neutral-100 transition-colors">
                     {uploadingDesktop ? (
@@ -437,7 +468,6 @@ export default function BannerFormModal({
                   </div>
                 </div>
 
-                {/* Preview Thumbnail */}
                 {mediaPath && (
                   <div className="w-36 h-24 bg-neutral-900 border border-neutral-300 overflow-hidden relative flex-shrink-0 flex items-center justify-center">
                     {mediaType === 'video' ? (
@@ -542,10 +572,170 @@ export default function BannerFormModal({
             </div>
           </div>
 
-          {/* Section 3: Click Destination */}
+          {/* Section 3: Instagram-Style Ratio & Framing Adjustments */}
+          <div className="space-y-4 bg-neutral-50 p-4 border border-neutral-200">
+            <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
+              <div className="flex items-center gap-2 text-neutral-900 font-bold uppercase tracking-wider">
+                <Crop className="w-4 h-4 text-black" />
+                <span>3. Instagram-Style Framing & Aspect Ratio Controls</span>
+              </div>
+              <span className="text-[10px] text-neutral-500 uppercase font-mono">Reference Presets</span>
+            </div>
+
+            {/* Aspect Ratio Selector */}
+            <div className="space-y-2">
+              <label className="block font-bold uppercase tracking-wider text-neutral-700 text-[11px]">
+                Aspect Ratio / Format Presets
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  { id: 'banner', label: 'E-Commerce Hero', tag: '3.2:1 (~480px)', desc: 'The Souled Store' },
+                  { id: 'widescreen', label: 'Landscape (16:9)', tag: '16:9 (~560px)', desc: 'Instagram Video' },
+                  { id: 'ultrawide', label: 'Cinema (21:9)', tag: '21:9 (~420px)', desc: 'Panoramic Hero' },
+                  { id: 'square', label: 'Square Post', tag: '1:1 (~500px)', desc: 'Instagram Classic' },
+                  { id: 'portrait', label: 'Portrait Feed', tag: '4:5 (~650px)', desc: 'Instagram Editorial' },
+                  { id: 'custom', label: 'Custom Slider', tag: `${customHeight}px`, desc: 'Custom Height' },
+                ].map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => setAspectRatio(preset.id as BannerAspectRatio)}
+                    className={`p-2.5 border text-left transition-all ${
+                      aspectRatio === preset.id
+                        ? 'bg-black text-white border-black shadow-sm'
+                        : 'bg-white text-neutral-800 border-neutral-300 hover:border-black'
+                    }`}
+                  >
+                    <div className="font-bold uppercase tracking-wider text-[11px]">
+                      {preset.label}
+                    </div>
+                    <div className={`text-[10px] font-mono mt-0.5 ${aspectRatio === preset.id ? 'text-neutral-300' : 'text-neutral-500'}`}>
+                      {preset.tag}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Height Slider (if custom selected) */}
+            {aspectRatio === 'custom' && (
+              <div className="space-y-1 pt-2 bg-white p-3 border border-neutral-200">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold uppercase tracking-wider text-neutral-700">
+                    Adjust Banner Height:
+                  </span>
+                  <span className="font-mono font-bold text-black">{customHeight} px</span>
+                </div>
+                <input
+                  type="range"
+                  min="220"
+                  max="750"
+                  step="10"
+                  value={customHeight}
+                  onChange={(e) => setCustomHeight(Number(e.target.value))}
+                  className="w-full accent-black cursor-pointer"
+                />
+              </div>
+            )}
+
+            {/* Crop Fit & Focal Alignment */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              {/* Crop Mode: Cover vs Contain */}
+              <div className="space-y-1.5">
+                <label className="block font-bold uppercase tracking-wider text-neutral-700 text-[11px]">
+                  Framing Mode (Zoom to Fill vs Fit)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setObjectFit('cover')}
+                    className={`p-2 border text-center font-bold uppercase tracking-wider text-[10px] transition-all ${
+                      objectFit === 'cover'
+                        ? 'bg-black text-white border-black'
+                        : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
+                    }`}
+                  >
+                    Cover (Fill Area)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setObjectFit('contain')}
+                    className={`p-2 border text-center font-bold uppercase tracking-wider text-[10px] transition-all ${
+                      objectFit === 'contain'
+                        ? 'bg-black text-white border-black'
+                        : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
+                    }`}
+                  >
+                    Contain (Full Image)
+                  </button>
+                </div>
+              </div>
+
+              {/* Focal Position: Top, Center, Bottom */}
+              <div className="space-y-1.5">
+                <label className="block font-bold uppercase tracking-wider text-neutral-700 text-[11px]">
+                  Focal Alignment (Drag Point)
+                </label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {(['top', 'center', 'bottom'] as BannerObjectPosition[]).map((pos) => (
+                    <button
+                      key={pos}
+                      type="button"
+                      onClick={() => setObjectPosition(pos)}
+                      className={`p-2 border text-center font-bold uppercase tracking-wider text-[10px] transition-all ${
+                        objectPosition === pos
+                          ? 'bg-black text-white border-black'
+                          : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
+                      }`}
+                    >
+                      {pos}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Live Interactive Preview Box */}
+            {mediaPath && (
+              <div className="pt-2">
+                <div className="flex items-center gap-1.5 text-neutral-500 font-bold uppercase text-[10px] mb-1">
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Live Crop & Framing Preview:</span>
+                </div>
+                <div className="w-full bg-neutral-950 border border-neutral-300 overflow-hidden relative flex items-center justify-center h-44 rounded-xs">
+                  {mediaType === 'video' ? (
+                    <video
+                      src={desktopPreviewUrl}
+                      muted
+                      autoPlay
+                      loop
+                      className={`w-full h-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'} ${
+                        objectPosition === 'top' ? 'object-top' : objectPosition === 'bottom' ? 'object-bottom' : 'object-center'
+                      }`}
+                    />
+                  ) : (
+                    <img
+                      src={desktopPreviewUrl}
+                      alt="Preview"
+                      className={`w-full h-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'} ${
+                        objectPosition === 'top' ? 'object-top' : objectPosition === 'bottom' ? 'object-bottom' : 'object-center'
+                      }`}
+                    />
+                  )}
+                  {heading && (
+                    <div className="absolute inset-0 bg-black/30 flex items-center p-4">
+                      <div className="text-white font-black uppercase text-sm drop-shadow">{heading}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 4: Click Destination */}
           <div className="space-y-4">
             <h3 className="font-bold uppercase tracking-wider text-neutral-900 border-b border-neutral-200 pb-1">
-              3. Click Destination & Linking
+              4. Click Destination & Linking
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -565,7 +755,6 @@ export default function BannerFormModal({
                 </select>
               </div>
 
-              {/* Dynamic Destination Field */}
               {destinationType === 'product' && (
                 <div className="space-y-1">
                   <label className="block font-bold uppercase tracking-wider text-neutral-700">
@@ -623,10 +812,10 @@ export default function BannerFormModal({
             </div>
           </div>
 
-          {/* Section 4: Styling & Playback Behavior */}
+          {/* Section 5: Playback & Colors */}
           <div className="space-y-4">
             <h3 className="font-bold uppercase tracking-wider text-neutral-900 border-b border-neutral-200 pb-1">
-              4. Visual Styling & Slideshow Rules
+              5. Slideshow Rules & Timing
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

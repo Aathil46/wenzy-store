@@ -17,11 +17,14 @@ export default function Header({ onOpenSearch }: HeaderProps) {
 
   const [categories, setCategories] = useState<Category[]>([])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<'men' | 'women' | 'sneakers' | string>('men')
+  const [activeTab, setActiveTab] = useState<string>('')
 
   useEffect(() => {
-    getCategories(true).then((cats) => {
+    getCategories(true, true).then((cats) => {
       setCategories(cats)
+      if (cats.length > 0 && !activeTab) {
+        setActiveTab(cats[0].slug)
+      }
     })
   }, [])
 
@@ -41,59 +44,25 @@ export default function Header({ onOpenSearch }: HeaderProps) {
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Desktop Navigation Tabs with Reference Active Indicator */}
+            {/* Desktop Navigation Tabs from Supabase with Reference Active Indicator */}
             <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-xs font-bold uppercase tracking-wider">
-              <Link
-                to="/shop"
-                onClick={() => setActiveTab('men')}
-                className={`py-2 transition-colors relative ${
-                  activeTab === 'men'
-                    ? 'text-black font-extrabold after:content-[\'\'] after:absolute after:bottom-[-14px] after:left-0 after:right-0 after:h-0.5 after:bg-red-600'
-                    : 'text-neutral-600 hover:text-black'
-                }`}
-              >
-                MEN
-              </Link>
-
-              <Link
-                to="/shop"
-                onClick={() => setActiveTab('women')}
-                className={`py-2 transition-colors relative ${
-                  activeTab === 'women'
-                    ? 'text-black font-extrabold after:content-[\'\'] after:absolute after:bottom-[-14px] after:left-0 after:right-0 after:h-0.5 after:bg-red-600'
-                    : 'text-neutral-600 hover:text-black'
-                }`}
-              >
-                WOMEN
-              </Link>
-
-              <Link
-                to="/shop"
-                onClick={() => setActiveTab('sneakers')}
-                className={`py-2 transition-colors relative ${
-                  activeTab === 'sneakers'
-                    ? 'text-black font-extrabold after:content-[\'\'] after:absolute after:bottom-[-14px] after:left-0 after:right-0 after:h-0.5 after:bg-red-600'
-                    : 'text-neutral-600 hover:text-black'
-                }`}
-              >
-                SNEAKERS
-              </Link>
-
-              {/* Dynamic categories from Supabase (if any) */}
-              {categories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  to={`/category/${cat.slug}`}
-                  onClick={() => setActiveTab(cat.slug)}
-                  className={`py-2 transition-colors relative hidden lg:inline-block ${
-                    activeTab === cat.slug
-                      ? 'text-black font-extrabold after:content-[\'\'] after:absolute after:bottom-[-14px] after:left-0 after:right-0 after:h-0.5 after:bg-red-600'
-                      : 'text-neutral-600 hover:text-black'
-                  }`}
-                >
-                  {cat.name}
-                </Link>
-              ))}
+              {categories.map((cat, idx) => {
+                const isSelected = activeTab === cat.slug || (!activeTab && idx === 0)
+                return (
+                  <Link
+                    key={cat.id}
+                    to={`/category/${cat.slug}`}
+                    onClick={() => setActiveTab(cat.slug)}
+                    className={`py-2 transition-colors relative ${
+                      isSelected
+                        ? "text-black font-extrabold after:content-[''] after:absolute after:bottom-[-14px] after:left-0 after:right-0 after:h-0.5 after:bg-red-600"
+                        : 'text-neutral-600 hover:text-black'
+                    }`}
+                  >
+                    {cat.name}
+                  </Link>
+                )
+              })}
             </nav>
           </div>
 
@@ -203,28 +172,24 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             </div>
 
             <div className="flex-1 py-6 space-y-4 overflow-y-auto">
-              <div className="grid grid-cols-3 gap-2 pb-4 border-b border-neutral-200 text-center text-xs font-bold uppercase tracking-wider">
-                <Link
-                  to="/shop"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="py-2 bg-neutral-100 hover:bg-neutral-200 text-black rounded"
-                >
-                  MEN
-                </Link>
-                <Link
-                  to="/shop"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="py-2 bg-neutral-100 hover:bg-neutral-200 text-black rounded"
-                >
-                  WOMEN
-                </Link>
-                <Link
-                  to="/shop"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="py-2 bg-neutral-100 hover:bg-neutral-200 text-black rounded"
-                >
-                  SNEAKERS
-                </Link>
+              <div className="flex flex-wrap gap-2 pb-4 border-b border-neutral-200 text-center text-xs font-bold uppercase tracking-wider">
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    to={`/category/${cat.slug}`}
+                    onClick={() => {
+                      setActiveTab(cat.slug)
+                      setMobileMenuOpen(false)
+                    }}
+                    className={`px-3 py-2 rounded transition-colors ${
+                      activeTab === cat.slug
+                        ? 'bg-black text-white'
+                        : 'bg-neutral-100 text-neutral-800 hover:bg-neutral-200'
+                    }`}
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
               </div>
 
               <Link
