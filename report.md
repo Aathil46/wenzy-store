@@ -44,10 +44,10 @@ The technical architecture combines Shopify's modern Liquid section architecture
 ```
 
 ### 1.2 Desktop Visual Presentation
-![Normless Desktop Homepage](C:/Users/LENOVO/.gemini/antigravity/brain/863be10b-d7aa-4e6d-9148-f3d7bef7c31c/homepage_desktop.png)
+![Normless Desktop Homepage](./screenshots/homepage_desktop.png)
 
 ### 1.3 Mobile Visual Presentation
-![Normless Mobile Homepage](C:/Users/LENOVO/.gemini/antigravity/brain/863be10b-d7aa-4e6d-9148-f3d7bef7c31c/homepage_mobile.png)
+![Normless Mobile Homepage](./screenshots/homepage_mobile.png)
 
 ### 1.4 Typography System (Verified via CSS Variables)
 Extracted directly from `:root` CSS declarations:
@@ -90,7 +90,7 @@ Extracted directly from `:root` CSS declarations:
 
 ### 2.2 Collection & Product Listing Pages (PLP)
 *Target URL:* `/collections/all-products`  
-![Collection All Products](C:/Users/LENOVO/.gemini/antigravity/brain/863be10b-d7aa-4e6d-9148-f3d7bef7c31c/collection_all_products.png)
+![Collection All Products](./screenshots/collection_all_products.png)
 
 - **Grid Density:** Responsive 4-column layout on large viewports (>=1200px), 3-column on tablet (768px–1024px), and 2-column on mobile (<768px).
 - **Product Card Architecture:**
@@ -102,7 +102,7 @@ Extracted directly from `:root` CSS declarations:
 
 ### 2.3 Individual Product Detail Page (PDP)
 *Target URL:* `/products/spider-suit-edition`  
-![Product Detail Page](C:/Users/LENOVO/.gemini/antigravity/brain/863be10b-d7aa-4e6d-9148-f3d7bef7c31c/product_page.png)
+![Product Detail Page](./screenshots/product_page.png)
 
 - **Gallery Structure:** Vertical multi-image thumbnail column on desktop with high-resolution main viewport; swipeable mobile image carousel on mobile devices.
 - **Title & Pricing Block:**
@@ -123,7 +123,7 @@ Extracted directly from `:root` CSS declarations:
 
 ### 2.4 Cart Drawer (`<cart-drawer-component>`)
 *Target Trigger:* AJAX submission on Product Page or Header Cart click.  
-![Cart Drawer Slideout](C:/Users/LENOVO/.gemini/antigravity/brain/863be10b-d7aa-4e6d-9148-f3d7bef7c31c/cart_drawer_opened.png)
+![Cart Drawer Slideout](./screenshots/cart_drawer_opened.png)
 
 - **Presentation:** High-performance `<dialog>` element configured with `scroll-lock=""` that slides out from the right viewport edge.
 - **Components:**
@@ -136,7 +136,7 @@ Extracted directly from `:root` CSS declarations:
 
 ### 2.5 Search Experience
 *Target URL:* `/search?q=oversized`  
-![Search Experience](C:/Users/LENOVO/.gemini/antigravity/brain/863be10b-d7aa-4e6d-9148-f3d7bef7c31c/search_page.png)
+![Search Experience](./screenshots/search_page.png)
 
 - **Integration:** Powered by **Searchanise** (`searchserverapi1.com`).
 - **Instant Overlay:** Typing in the header input triggers an instant autocomplete dropdown showing trending search terms, product thumbnail suggestions, and direct collection shortcuts.
