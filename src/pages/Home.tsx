@@ -39,10 +39,80 @@ export default function Home() {
 
   return (
     <div className="flex flex-col w-full">
-      {/* 1. Dynamic Hero Banner Carousel */}
+      {/* 1. Dynamic Hero Banner Carousel (Directly under Header, Flush Layout) */}
       <HeroBannerCarousel banners={banners} />
 
-      {/* 2. Category Spotlight (Dynamically rendered only if categories exist in database) */}
+      {/* 2. New Arrivals (Directly under banner, matching reference design) */}
+      <section className="py-10 sm:py-14 border-b border-neutral-100">
+        <div className="wrap">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-neutral-900">
+              NEW ARRIVALS
+            </h2>
+            <div className="w-12 h-1 bg-red-600 mx-auto mt-2 rounded-full" />
+          </div>
+
+          {/* Product Grid / Error / Empty States */}
+          {error ? (
+            <div className="py-16 text-center max-w-md mx-auto space-y-4 bg-red-50/50 p-8 border border-red-200">
+              <AlertCircle className="w-8 h-8 text-red-600 mx-auto" />
+              <div className="text-sm font-bold uppercase tracking-wider text-red-900">
+                Database Connection Error
+              </div>
+              <p className="text-xs text-red-700 leading-relaxed">{error}</p>
+              <button onClick={loadData} className="btn-secondary inline-flex items-center gap-2 text-xs">
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Retry Connection</span>
+              </button>
+            </div>
+          ) : loading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+              {[1, 2, 3, 4].map((n) => (
+                <div key={n} className="animate-pulse space-y-3">
+                  <div className="aspect-square bg-neutral-200" />
+                  <div className="h-4 bg-neutral-200 w-3/4" />
+                  <div className="h-4 bg-neutral-200 w-1/4" />
+                </div>
+              ))}
+            </div>
+          ) : featuredProducts.length === 0 ? (
+            <div className="py-16 text-center max-w-md mx-auto space-y-4">
+              <div className="w-14 h-14 bg-neutral-100 rounded-full flex items-center justify-center mx-auto text-neutral-400">
+                <Sparkles className="w-7 h-7" />
+              </div>
+              <h3 className="font-heading font-black text-xl uppercase tracking-tight text-black">
+                Products Coming Soon
+              </h3>
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                We are currently engineering our inaugural streetwear drop. Stay tuned for new releases.
+              </p>
+              <Link to="/shop" className="btn-secondary inline-flex text-xs">
+                Browse Full Catalog
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-6 sm:gap-y-12">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+
+          {featuredProducts.length > 0 && (
+            <div className="text-center mt-12">
+              <Link
+                to="/shop"
+                className="inline-flex items-center gap-2 px-8 py-3 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors"
+              >
+                <span>VIEW ALL NEW ARRIVALS</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* 3. Category Spotlight (Dynamically rendered only if categories exist in database) */}
       {categories.length > 0 && (
         <section className="py-12 border-b border-neutral-200 bg-neutral-50">
           <div className="wrap">
@@ -59,7 +129,7 @@ export default function Home() {
                 to="/shop"
                 className="text-xs font-bold uppercase tracking-[0.16em] text-black hover:opacity-60 flex items-center gap-1"
               >
-                <span>View Catalog</span>
+                <span>View All</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -103,76 +173,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* 3. Featured Drops Section */}
-      <section className="py-16 md:py-24">
-        <div className="wrap">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 pb-4 border-b border-neutral-200">
-            <div>
-              <span className="font-accent text-[11px] font-bold uppercase tracking-[0.24em] text-neutral-500">
-                Signature Collection
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black mt-1">
-                Trending Streetwear Drops
-              </h2>
-            </div>
-            <Link
-              to="/shop"
-              className="text-xs font-bold uppercase tracking-[0.16em] text-black hover:opacity-60 flex items-center gap-1.5"
-            >
-              <span>View All Pieces ({featuredProducts.length})</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {/* Product Grid / Error / Empty States */}
-          {error ? (
-            <div className="py-16 text-center max-w-md mx-auto space-y-4 bg-red-50/50 p-8 border border-red-200">
-              <AlertCircle className="w-8 h-8 text-red-600 mx-auto" />
-              <div className="text-sm font-bold uppercase tracking-wider text-red-900">
-                Database Connection Error
-              </div>
-              <p className="text-xs text-red-700 leading-relaxed">{error}</p>
-              <button onClick={loadData} className="btn-secondary inline-flex items-center gap-2 text-xs">
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Retry Connection</span>
-              </button>
-            </div>
-          ) : loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-              {[1, 2, 3, 4].map((n) => (
-                <div key={n} className="animate-pulse space-y-3">
-                  <div className="aspect-square bg-neutral-200" />
-                  <div className="h-4 bg-neutral-200 w-3/4" />
-                  <div className="h-4 bg-neutral-200 w-1/4" />
-                </div>
-              ))}
-            </div>
-          ) : featuredProducts.length === 0 ? (
-            <div className="py-20 text-center max-w-md mx-auto space-y-4">
-              <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto text-neutral-400">
-                <Sparkles className="w-8 h-8" />
-              </div>
-              <h3 className="font-heading font-black text-2xl uppercase tracking-tight text-black">
-                Products Coming Soon
-              </h3>
-              <p className="text-xs text-neutral-500 leading-relaxed">
-                We are currently engineering our inaugural streetwear drop. Stay tuned for new releases.
-              </p>
-              <Link to="/about" className="btn-secondary inline-flex text-xs">
-                Brand Story & Philosophy
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-6 sm:gap-y-12">
-              {featuredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* 4. Fabric Engineering & Brand Specs Banner */}
+      {/* 4. Fabric Engineering & Brand Specs */}
       <section className="py-16 bg-neutral-900 text-white">
         <div className="wrap grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="border-l-2 border-white pl-6 space-y-2">
@@ -207,8 +208,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 5. Verified Customer Reviews & Community Proof */}
-      <section className="py-16 md:py-24 border-t border-neutral-200">
+      {/* 5. Verified Customer Proof */}
+      <section className="py-16 md:py-20 border-t border-neutral-200">
         <div className="wrap">
           <div className="text-center max-w-xl mx-auto space-y-2 mb-12">
             <div className="flex items-center justify-center gap-1 text-amber-500">
@@ -220,7 +221,7 @@ export default function Home() {
               Verified Buyer Feedback
             </h2>
             <p className="text-xs text-neutral-500">
-              Join thousands of streetwear enthusiasts sporting WENZY across India.
+              Real testimonials from verified streetwear enthusiasts across India.
             </p>
           </div>
 
@@ -231,16 +232,14 @@ export default function Home() {
                   <Star key={i} className="w-3.5 h-3.5 fill-current" />
                 ))}
               </div>
-              <div className="text-xs font-bold uppercase tracking-wider text-black">
-                "Insane Quality & Fit"
-              </div>
-              <p className="text-xs text-neutral-600 leading-relaxed">
-                The 240 GSM weight is real. The collar stays crisp after 5+ washes and the drop shoulder fits exactly
-                like high-end international streetwear brands.
+              <p className="text-xs text-neutral-700 italic leading-relaxed">
+                "The 240 GSM weight is unreal. It holds its structured boxy shape even after 10+ machine washes. Best drop-shoulder cut in India."
               </p>
-              <div className="flex items-center gap-2 pt-2 text-[11px] font-bold text-neutral-500">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Rohan V. • Verified Buyer (Mumbai)</span>
+              <div className="pt-2 border-t border-neutral-200 flex items-center justify-between text-[11px]">
+                <span className="font-bold uppercase tracking-wider text-black">Aarav M. — Mumbai</span>
+                <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" /> Verified Buyer
+                </span>
               </div>
             </div>
 
@@ -250,16 +249,14 @@ export default function Home() {
                   <Star key={i} className="w-3.5 h-3.5 fill-current" />
                 ))}
               </div>
-              <div className="text-xs font-bold uppercase tracking-wider text-black">
-                "The Graphic Print is Wild"
-              </div>
-              <p className="text-xs text-neutral-600 leading-relaxed">
-                High-density puff and clean lines. Everyone asked where I got this tee. Shipped in 2 days to Bangalore.
-                Super satisfied!
+              <p className="text-xs text-neutral-700 italic leading-relaxed">
+                "Packaging, unboxing experience, and the garment finish are at international luxury streetwear level. WENZY is legit."
               </p>
-              <div className="flex items-center gap-2 pt-2 text-[11px] font-bold text-neutral-500">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Karan S. • Verified Buyer (Bangalore)</span>
+              <div className="pt-2 border-t border-neutral-200 flex items-center justify-between text-[11px]">
+                <span className="font-bold uppercase tracking-wider text-black">Vikram S. — Bengaluru</span>
+                <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" /> Verified Buyer
+                </span>
               </div>
             </div>
 
@@ -269,16 +266,14 @@ export default function Home() {
                   <Star key={i} className="w-3.5 h-3.5 fill-current" />
                 ))}
               </div>
-              <div className="text-xs font-bold uppercase tracking-wider text-black">
-                "Legit Oversized Silhouette"
-              </div>
-              <p className="text-xs text-neutral-600 leading-relaxed">
-                No need to size up — stick to your regular size for that authentic boxy drape. Best graphic tee brand
-                coming out of India right now.
+              <p className="text-xs text-neutral-700 italic leading-relaxed">
+                "Delivery was super fast and the fit is perfect. The ribbed collar doesn't sag or bacon. Will definitely order from the next drop."
               </p>
-              <div className="flex items-center gap-2 pt-2 text-[11px] font-bold text-neutral-500">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Ananya M. • Verified Buyer (Delhi)</span>
+              <div className="pt-2 border-t border-neutral-200 flex items-center justify-between text-[11px]">
+                <span className="font-bold uppercase tracking-wider text-black">Rhea K. — Delhi</span>
+                <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" /> Verified Buyer
+                </span>
               </div>
             </div>
           </div>

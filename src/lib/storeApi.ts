@@ -7,7 +7,6 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   tagline: 'Bold Streetwear for the Limitless',
   currency: 'INR',
   currency_symbol: '₹',
-  announcement: 'BOLD STREETWEAR FOR THE LIMITLESS • FREE SHIPPING ACROSS INDIA ON ORDERS OVER ₹999 • CASH ON DELIVERY AVAILABLE',
   contact_email: 'support@wenzy.store',
   contact_phone: '+91 98765 43210',
   shipping_fee: 99.0,

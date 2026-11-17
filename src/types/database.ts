@@ -144,7 +144,7 @@ export interface StoreSettings {
   tagline: string
   currency: string
   currency_symbol: string
-  announcement: string
+  announcement?: string
   contact_email: string
   contact_phone: string
   shipping_fee: number

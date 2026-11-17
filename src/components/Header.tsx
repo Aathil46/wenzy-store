@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Search, ShoppingBag, User, Menu, X, ArrowRight, ShieldCheck } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
+import { Search, ShoppingBag, User, Heart, Menu, X, ArrowRight, ShieldCheck, Mic } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
-import { getCategories, getStoreSettings } from '../lib/storeApi'
-import type { Category, StoreSettings } from '../types/database'
+import { getCategories } from '../lib/storeApi'
+import type { Category } from '../types/database'
 
 interface HeaderProps {
   onOpenSearch: () => void
@@ -13,61 +13,83 @@ interface HeaderProps {
 export default function Header({ onOpenSearch }: HeaderProps) {
   const { itemCount, openCart } = useCart()
   const { user, isAdmin } = useAuth()
-  const navigate = useNavigate()
+  const location = useLocation()
 
   const [categories, setCategories] = useState<Category[]>([])
-  const [settings, setSettings] = useState<StoreSettings | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
+  const [activeTab, setActiveTab] = useState<'men' | 'women' | 'sneakers' | string>('men')
 
   useEffect(() => {
-    getCategories(true).then(setCategories)
-    getStoreSettings().then(setSettings)
-
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    getCategories(true).then((cats) => {
+      setCategories(cats)
+    })
   }, [])
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white transition-shadow duration-200">
-      {/* 1. Announcement Bar */}
-      <div className="bg-black text-white text-[11px] font-bold tracking-[0.18em] py-2 px-4 text-center overflow-hidden">
-        <div className="animate-pulse">
-          {settings?.announcement ||
-            'BOLD STREETWEAR FOR THE LIMITLESS • FREE SHIPPING ACROSS INDIA ON ORDERS OVER ₹999 • CASH ON DELIVERY AVAILABLE'}
-        </div>
-      </div>
-
-      {/* 2. Main Navigation Bar */}
-      <div
-        className={`w-full border-b border-neutral-200 transition-all duration-200 ${
-          scrolled ? 'py-3 shadow-sm' : 'py-4'
-        }`}
-      >
-        <div className="wrap flex items-center justify-between">
-          {/* Left: Mobile Menu Trigger & Desktop Links */}
-          <div className="flex items-center gap-6">
+    <header className="sticky top-0 z-40 w-full bg-white border-b border-neutral-200">
+      {/* Main Navigation Bar — Starts directly at top (No black announcement bar) */}
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-3.5">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          
+          {/* Left: Hamburger menu + Primary Category Tabs */}
+          <div className="flex items-center gap-4 sm:gap-6">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-1 text-black hover:opacity-70 focus:outline-none"
-              aria-label="Open mobile menu"
+              className="p-1 text-neutral-800 hover:text-black focus:outline-none"
+              aria-label="Open navigation menu"
             >
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5" />
             </button>
 
-            {/* Desktop Navigation Links (Dynamically populated from Supabase) */}
-            <nav className="hidden lg:flex items-center gap-8 text-xs font-bold uppercase tracking-[0.16em]">
-              <Link to="/shop" className="text-black hover:opacity-60 transition-opacity">
-                All Products
+            {/* Desktop Navigation Tabs with Reference Active Indicator */}
+            <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-xs font-bold uppercase tracking-wider">
+              <Link
+                to="/shop"
+                onClick={() => setActiveTab('men')}
+                className={`py-2 transition-colors relative ${
+                  activeTab === 'men'
+                    ? 'text-black font-extrabold after:content-[\'\'] after:absolute after:bottom-[-14px] after:left-0 after:right-0 after:h-0.5 after:bg-red-600'
+                    : 'text-neutral-600 hover:text-black'
+                }`}
+              >
+                MEN
               </Link>
+
+              <Link
+                to="/shop"
+                onClick={() => setActiveTab('women')}
+                className={`py-2 transition-colors relative ${
+                  activeTab === 'women'
+                    ? 'text-black font-extrabold after:content-[\'\'] after:absolute after:bottom-[-14px] after:left-0 after:right-0 after:h-0.5 after:bg-red-600'
+                    : 'text-neutral-600 hover:text-black'
+                }`}
+              >
+                WOMEN
+              </Link>
+
+              <Link
+                to="/shop"
+                onClick={() => setActiveTab('sneakers')}
+                className={`py-2 transition-colors relative ${
+                  activeTab === 'sneakers'
+                    ? 'text-black font-extrabold after:content-[\'\'] after:absolute after:bottom-[-14px] after:left-0 after:right-0 after:h-0.5 after:bg-red-600'
+                    : 'text-neutral-600 hover:text-black'
+                }`}
+              >
+                SNEAKERS
+              </Link>
+
+              {/* Dynamic categories from Supabase (if any) */}
               {categories.map((cat) => (
                 <Link
                   key={cat.id}
                   to={`/category/${cat.slug}`}
-                  className="text-black hover:opacity-60 transition-opacity"
+                  onClick={() => setActiveTab(cat.slug)}
+                  className={`py-2 transition-colors relative hidden lg:inline-block ${
+                    activeTab === cat.slug
+                      ? 'text-black font-extrabold after:content-[\'\'] after:absolute after:bottom-[-14px] after:left-0 after:right-0 after:h-0.5 after:bg-red-600'
+                      : 'text-neutral-600 hover:text-black'
+                  }`}
                 >
                   {cat.name}
                 </Link>
@@ -75,32 +97,46 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             </nav>
           </div>
 
-          {/* Center: Brand Wordmark / Logo */}
+          {/* Center: Brand Logo */}
           <div className="flex items-center justify-center">
-            <Link to="/" className="flex items-center gap-2 group">
-              <span className="font-heading font-black text-2xl tracking-[0.2em] uppercase text-black group-hover:opacity-80 transition-opacity">
-                WENZY<span className="text-xs align-super ml-0.5">®</span>
+            <Link to="/" className="flex items-center gap-1.5 group">
+              <span className="font-heading font-black text-xl sm:text-2xl tracking-[0.18em] uppercase text-black group-hover:opacity-85 transition-opacity">
+                WENZY<span className="text-[10px] align-super text-red-600 font-bold ml-0.5">®</span>
               </span>
             </Link>
           </div>
 
-          {/* Right: Actions (Search, Account, Admin Pill, Cart) */}
-          <div className="flex items-center gap-4 sm:gap-6">
-            {/* Search Trigger */}
+          {/* Right: Search Pill Input + Account + Wishlist + Cart */}
+          <div className="flex items-center gap-3 sm:gap-4 lg:gap-5">
+            {/* Pill Search Input */}
+            <div
+              onClick={onOpenSearch}
+              className="hidden sm:flex items-center justify-between bg-neutral-100 hover:bg-neutral-200/70 border border-neutral-200 rounded-full px-4 py-1.5 w-44 md:w-56 lg:w-64 cursor-pointer transition-all text-xs"
+              title="Search WENZY"
+            >
+              <span className="text-neutral-500 font-medium truncate">
+                What are you looking for?
+              </span>
+              <div className="flex items-center gap-2 text-neutral-400 pl-2">
+                <Mic className="w-3.5 h-3.5 hover:text-black transition-colors" />
+                <Search className="w-3.5 h-3.5 text-neutral-600" />
+              </div>
+            </div>
+
+            {/* Mobile Search Icon Button */}
             <button
               onClick={onOpenSearch}
-              className="flex items-center gap-2 text-black hover:opacity-60 transition-opacity focus:outline-none"
-              aria-label="Search store"
+              className="sm:hidden p-1 text-neutral-800 hover:text-black focus:outline-none"
+              aria-label="Search"
             >
               <Search className="w-5 h-5" />
-              <span className="hidden sm:inline text-xs font-bold uppercase tracking-[0.14em]">Search</span>
             </button>
 
             {/* Admin Quick Switch (if authenticated as admin) */}
             {isAdmin && (
               <Link
                 to="/admin"
-                className="hidden md:inline-flex items-center gap-1.5 bg-neutral-900 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded"
+                className="hidden xl:inline-flex items-center gap-1 bg-neutral-900 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 Admin
@@ -110,21 +146,30 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             {/* User Account */}
             <Link
               to={user ? '/account' : '/login'}
-              className="text-black hover:opacity-60 transition-opacity"
-              aria-label="User account"
+              className="p-1 text-neutral-800 hover:text-black transition-colors"
+              aria-label="User Account"
             >
               <User className="w-5 h-5" />
             </Link>
 
-            {/* Slideout Cart Drawer Trigger */}
+            {/* Wishlist / Heart */}
+            <Link
+              to="/shop"
+              className="p-1 text-neutral-800 hover:text-black transition-colors hidden xs:block"
+              aria-label="Wishlist"
+            >
+              <Heart className="w-5 h-5" />
+            </Link>
+
+            {/* Shopping Cart Bag */}
             <button
               onClick={openCart}
-              className="relative flex items-center gap-2 text-black hover:opacity-60 transition-opacity focus:outline-none"
-              aria-label="Shopping bag"
+              className="relative p-1 text-neutral-800 hover:text-black transition-colors focus:outline-none"
+              aria-label="Shopping Bag"
             >
               <ShoppingBag className="w-5 h-5" />
               {itemCount > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-black text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center font-mono">
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center font-mono">
                   {itemCount}
                 </span>
               )}
@@ -133,7 +178,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
         </div>
       </div>
 
-      {/* 3. Mobile Navigation Drawer */}
+      {/* Mobile Navigation Drawer */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
           {/* Backdrop */}
@@ -146,7 +191,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
           <div className="relative w-4/5 max-w-sm bg-white h-full shadow-2xl flex flex-col p-6 animate-slide-in-right">
             <div className="flex items-center justify-between pb-6 border-b border-neutral-200">
               <span className="font-heading font-black text-xl tracking-[0.2em] uppercase">
-                WENZY<span className="text-xs align-super ml-0.5">®</span>
+                WENZY<span className="text-xs align-super ml-0.5 text-red-600">®</span>
               </span>
               <button
                 onClick={() => setMobileMenuOpen(false)}
@@ -157,7 +202,31 @@ export default function Header({ onOpenSearch }: HeaderProps) {
               </button>
             </div>
 
-            <div className="flex-1 py-6 space-y-5 overflow-y-auto">
+            <div className="flex-1 py-6 space-y-4 overflow-y-auto">
+              <div className="grid grid-cols-3 gap-2 pb-4 border-b border-neutral-200 text-center text-xs font-bold uppercase tracking-wider">
+                <Link
+                  to="/shop"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="py-2 bg-neutral-100 hover:bg-neutral-200 text-black rounded"
+                >
+                  MEN
+                </Link>
+                <Link
+                  to="/shop"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="py-2 bg-neutral-100 hover:bg-neutral-200 text-black rounded"
+                >
+                  WOMEN
+                </Link>
+                <Link
+                  to="/shop"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="py-2 bg-neutral-100 hover:bg-neutral-200 text-black rounded"
+                >
+                  SNEAKERS
+                </Link>
+              </div>
+
               <Link
                 to="/shop"
                 onClick={() => setMobileMenuOpen(false)}

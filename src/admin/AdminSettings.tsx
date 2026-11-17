@@ -63,7 +63,7 @@ export default function AdminSettings() {
             Store Settings
           </h1>
           <p className="text-xs text-neutral-500 uppercase tracking-wider mt-1">
-            Global store configuration, currencies, tax calculation, and top announcements
+            Global store configuration, currencies, tax calculation, and logistics
           </p>
         </div>
       </div>
@@ -115,19 +115,6 @@ export default function AdminSettings() {
                 className="input-field"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-neutral-600 uppercase font-bold text-[10px] mb-1">
-              Top Announcement Bar Marquee Text
-            </label>
-            <textarea
-              name="announcement"
-              rows={2}
-              value={settings.announcement}
-              onChange={handleChange}
-              className="w-full border border-neutral-300 p-3 text-xs outline-none focus:border-black font-bold uppercase tracking-wider"
-            />
           </div>
         </div>
 
