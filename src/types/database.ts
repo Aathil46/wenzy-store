@@ -166,3 +166,38 @@ export interface CartItem {
   maxStock: number
   image: string
 }
+
+// ============================================================
+// Storefront Banners
+// ============================================================
+export type BannerMediaType = 'image' | 'video'
+export type BannerDestinationType = 'product' | 'category' | 'custom_url' | 'none'
+export type BannerVideoAdvanceMode = 'duration' | 'on_end'
+export type BannerTextAlignment = 'left' | 'center' | 'right'
+
+export interface StorefrontBanner {
+  id: string
+  title: string
+  media_type: BannerMediaType
+  media_path: string
+  mobile_media_path?: string | null
+  destination_type: BannerDestinationType
+  destination_product_id?: string | null
+  destination_category_id?: string | null
+  destination_url?: string | null
+  heading?: string | null
+  description?: string | null
+  button_text?: string | null
+  display_order: number
+  duration_ms: number
+  video_advance_mode: BannerVideoAdvanceMode
+  overlay_opacity: number
+  text_alignment: BannerTextAlignment
+  text_color: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  // Joined fields (optional, from admin queries)
+  destination_product?: { name: string; slug: string } | null
+  destination_category?: { name: string; slug: string } | null
+}

@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Star, ShieldCheck, Sparkles, AlertCircle, RefreshCw } from 'lucide-react'
 import ProductCard from '../components/ProductCard'
-import { getCategories, getProducts } from '../lib/storeApi'
-import type { Category, Product } from '../types/database'
+import HeroBannerCarousel from '../components/HeroBannerCarousel'
+import { getCategories, getProducts, getBanners } from '../lib/storeApi'
+import type { Category, Product, StorefrontBanner } from '../types/database'
 
 export default function Home() {
+  const [banners, setBanners] = useState<StorefrontBanner[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -15,10 +17,12 @@ export default function Home() {
     setLoading(true)
     setError(null)
     try {
-      const [cats, prods] = await Promise.all([
+      const [fetchedBanners, cats, prods] = await Promise.all([
+        getBanners(),
         getCategories(true),
         getProducts({ isFeatured: true }),
       ])
+      setBanners(fetchedBanners)
       setCategories(cats)
       setFeaturedProducts(prods)
     } catch (err: any) {
@@ -35,51 +39,8 @@ export default function Home() {
 
   return (
     <div className="flex flex-col w-full">
-      {/* 1. Hero Section (Matching REA Normless Full-Bleed Aesthetics) */}
-      <section className="relative w-full min-h-[75vh] md:min-h-[85vh] bg-black text-white flex items-center overflow-hidden">
-        {/* Background Visual Texture */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src="https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=2000&q=85"
-            alt="WENZY Streetwear Hero"
-            className="w-full h-full object-cover object-center opacity-40 scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-black/60" />
-        </div>
-
-        {/* Content Overlay */}
-        <div className="wrap relative z-10 py-20 flex flex-col items-start justify-center max-w-4xl space-y-6">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded border border-white/20 font-accent text-xs font-bold uppercase tracking-widest text-white">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>SEASON 01 • INAUGURAL DROP</span>
-          </div>
-
-          <h1 className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight leading-[0.95] uppercase text-white">
-            WEAR YOUR <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-neutral-200 to-neutral-400">
-              LIMITLESS EDGE.
-            </span>
-          </h1>
-
-          <p className="text-sm sm:text-base md:text-lg text-neutral-300 max-w-xl font-normal leading-relaxed">
-            Engineered with 240+ GSM heavyweight combed cotton and signature drop-shoulder silhouettes. Built for those
-            who refuse to blend in.
-          </p>
-
-          <div className="flex flex-wrap items-center gap-4 pt-4">
-            <Link to="/shop" className="btn-primary bg-white text-black hover:bg-neutral-200 hover:text-black">
-              <span>EXPLORE COLLECTION</span>
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </Link>
-            <Link
-              to="/about"
-              className="inline-flex h-12 items-center justify-center gap-2 border border-white bg-transparent px-6 text-xs font-bold uppercase tracking-[0.16em] text-white transition-all duration-200 hover:bg-white hover:text-black active:scale-[0.98]"
-            >
-              BRAND STORY
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* 1. Dynamic Hero Banner Carousel */}
+      <HeroBannerCarousel banners={banners} />
 
       {/* 2. Category Spotlight (Dynamically rendered only if categories exist in database) */}
       {categories.length > 0 && (

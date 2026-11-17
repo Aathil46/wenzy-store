@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Category, Order, OrderStatus, PaymentStatus, Product, ShippingAddressData, StoreSettings } from '../types/database'
+import type { Category, Order, OrderStatus, PaymentStatus, Product, ShippingAddressData, StoreSettings, StorefrontBanner } from '../types/database'
 
 // Default fallback settings if DB request fails or is pending
 export const DEFAULT_SETTINGS: StoreSettings = {
@@ -555,4 +555,159 @@ export async function adminSaveSettings(settings: StoreSettings) {
     })
 
   if (error) throw error
+}
+
+// ===========================================================================
+// BANNER MANAGEMENT
+// ===========================================================================
+
+/** Returns the public CDN URL for a given banner-media storage path */
+export function getBannerPublicUrl(path: string): string {
+  if (!path) return ''
+  // If it's already a full URL, return as-is
+  if (path.startsWith('http')) return path
+  const { data } = supabase.storage.from('banner-media').getPublicUrl(path)
+  return data.publicUrl
+}
+
+/** Fetch active banners for storefront (ordered by display_order) */
+export async function getBanners(): Promise<StorefrontBanner[]> {
+  const { data, error } = await supabase
+    .from('storefront_banners')
+    .select(`
+      *,
+      destination_product:products!destination_product_id(name, slug),
+      destination_category:categories!destination_category_id(name, slug)
+    `)
+    .eq('is_active', true)
+    .order('display_order', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching banners:', error)
+    return []
+  }
+  return data || []
+}
+
+/** Fetch ALL banners for admin (including inactive), with joined product/category names */
+export async function adminGetBanners(): Promise<StorefrontBanner[]> {
+  const { data, error } = await supabase
+    .from('storefront_banners')
+    .select(`
+      *,
+      destination_product:products!destination_product_id(name, slug),
+      destination_category:categories!destination_category_id(name, slug)
+    `)
+    .order('display_order', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching banners (admin):', error)
+    throw error
+  }
+  return data || []
+}
+
+/** Create or update a banner record */
+export async function adminSaveBanner(banner: Partial<StorefrontBanner>): Promise<StorefrontBanner> {
+  const payload = {
+    title: banner.title,
+    media_type: banner.media_type,
+    media_path: banner.media_path,
+    mobile_media_path: banner.mobile_media_path || null,
+    destination_type: banner.destination_type || 'none',
+    destination_product_id: banner.destination_product_id || null,
+    destination_category_id: banner.destination_category_id || null,
+    destination_url: banner.destination_url || null,
+    heading: banner.heading || null,
+    description: banner.description || null,
+    button_text: banner.button_text || null,
+    display_order: banner.display_order ?? 0,
+    duration_ms: banner.duration_ms ?? 5000,
+    video_advance_mode: banner.video_advance_mode || 'duration',
+    overlay_opacity: banner.overlay_opacity ?? 0.4,
+    text_alignment: banner.text_alignment || 'left',
+    text_color: banner.text_color || '#FFFFFF',
+    is_active: banner.is_active ?? true,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (banner.id) {
+    // UPDATE
+    const { data, error } = await supabase
+      .from('storefront_banners')
+      .update(payload)
+      .eq('id', banner.id)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  } else {
+    // INSERT
+    const { data, error } = await supabase
+      .from('storefront_banners')
+      .insert(payload)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  }
+}
+
+/** Toggle banner active/inactive */
+export async function adminToggleBannerActive(id: string, isActive: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('storefront_banners')
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
+/** Delete a banner record and its associated media from storage */
+export async function adminDeleteBanner(id: string, mediaPath?: string | null, mobileMediaPath?: string | null): Promise<void> {
+  const { error } = await supabase
+    .from('storefront_banners')
+    .delete()
+    .eq('id', id)
+  if (error) throw error
+
+  // Clean up storage objects (best-effort, don't fail if missing)
+  const toDelete: string[] = []
+  if (mediaPath && !mediaPath.startsWith('http')) toDelete.push(mediaPath)
+  if (mobileMediaPath && !mobileMediaPath.startsWith('http')) toDelete.push(mobileMediaPath)
+  if (toDelete.length > 0) {
+    await supabase.storage.from('banner-media').remove(toDelete)
+  }
+}
+
+/** Reorder banners using the server-side RPC */
+export async function adminReorderBanners(orderedIds: string[]): Promise<void> {
+  const { error } = await supabase.rpc('reorder_banners', { p_ordered_ids: orderedIds })
+  if (error) throw error
+}
+
+/** Upload a banner media file (image or video) to the banner-media bucket */
+export async function uploadBannerMedia(
+  file: File,
+  type: 'image' | 'video'
+): Promise<{ path: string; url: string; error?: string }> {
+  const ext = file.name.split('.').pop()?.toLowerCase() || (type === 'video' ? 'mp4' : 'jpg')
+  const fileName = `${type}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`
+  const path = `banners/${fileName}`
+
+  const { data, error } = await supabase.storage
+    .from('banner-media')
+    .upload(path, file, { upsert: false, contentType: file.type })
+
+  if (error) {
+    return { path: '', url: '', error: error.message }
+  }
+
+  const { data: urlData } = supabase.storage.from('banner-media').getPublicUrl(data.path)
+  return { path: data.path, url: urlData.publicUrl }
+}
+
+/** Delete a banner media file from storage */
+export async function deleteBannerMedia(path: string): Promise<void> {
+  if (!path || path.startsWith('http')) return
+  await supabase.storage.from('banner-media').remove([path])
 }

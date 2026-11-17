@@ -24,6 +24,7 @@ import AdminCategories from './admin/AdminCategories'
 import AdminOrders from './admin/AdminOrders'
 import AdminCustomers from './admin/AdminCustomers'
 import AdminSettings from './admin/AdminSettings'
+import AdminBanners from './admin/AdminBanners'
 
 export default function App() {
   return (
@@ -57,6 +58,7 @@ export default function App() {
           {/* Dedicated Admin Portal Routes */}
           <Route path="admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
+            <Route path="banners" element={<AdminBanners />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="orders" element={<AdminOrders />} />
