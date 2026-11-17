@@ -33,6 +33,8 @@ export interface ProductDetails {
   [key: string]: any
 }
 
+export type ProductImageViewType = 'standard' | 'side' | 'front' | 'back' | 'detail'
+
 export interface ProductImage {
   id: string
   product_id: string
@@ -40,6 +42,7 @@ export interface ProductImage {
   alt_text?: string | null
   display_order: number
   is_primary: boolean
+  view_type?: ProductImageViewType
   created_at: string
 }
 
@@ -66,6 +69,8 @@ export interface Product {
   is_active: boolean
   is_featured: boolean
   is_new: boolean
+  in_clothing_rail?: boolean
+  rail_display_order?: number
   details?: ProductDetails | null
   created_at: string
   updated_at: string

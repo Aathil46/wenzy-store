@@ -18,6 +18,49 @@ export const DEFAULT_SETTINGS: StoreSettings = {
 // Storefront Queries
 // ---------------------------------------------------------------------------
 
+/**
+ * Fetch products configured for the interactive WENZY RACK.
+ * Strictly filters to ensure only active products with all three mandatory
+ * rack images (side, front, back) are returned to the public storefront rail.
+ */
+export async function getRackProducts(): Promise<Product[]> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        category:categories(*),
+        images:product_images(*),
+        variants:product_variants(*)
+      `)
+      .eq('is_active', true)
+      .eq('in_clothing_rail', true)
+      .order('rail_display_order', { ascending: true })
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching rack products:', error)
+      return []
+    }
+
+    const products = (data as Product[]) || []
+
+    // Enforce strict storefront rule:
+    // A rack garment MUST have its required side-profile, front, and back images.
+    // If any are missing, it remains hidden from the public clothing rail.
+    return products.filter((p) => {
+      const imgs = p.images || []
+      const hasSide = imgs.some((img) => img.view_type === 'side' && Boolean(img.image_url?.trim()))
+      const hasFront = imgs.some((img) => img.view_type === 'front' && Boolean(img.image_url?.trim()))
+      const hasBack = imgs.some((img) => img.view_type === 'back' && Boolean(img.image_url?.trim()))
+      return hasSide && hasFront && hasBack
+    })
+  } catch (err) {
+    console.error('Failed to load rack products:', err)
+    return []
+  }
+}
+
 export async function getStoreSettings(): Promise<StoreSettings> {
   try {
     const { data, error } = await supabase
@@ -370,7 +413,7 @@ export async function adminGetProducts(): Promise<Product[]> {
 
 export async function adminSaveProduct(
   productData: Partial<Product>,
-  images: { image_url: string; alt_text?: string; is_primary?: boolean }[],
+  images: { image_url: string; alt_text?: string; is_primary?: boolean; view_type?: 'standard' | 'side' | 'front' | 'back' | 'detail' }[],
   variants: { size: string; color: string; sku?: string; stock_quantity: number }[]
 ) {
   let productId = productData.id
@@ -389,6 +432,8 @@ export async function adminSaveProduct(
         is_active: productData.is_active ?? true,
         is_featured: productData.is_featured ?? false,
         is_new: productData.is_new ?? false,
+        in_clothing_rail: productData.in_clothing_rail ?? false,
+        rail_display_order: productData.rail_display_order ?? 0,
         details: productData.details || {},
       })
       .select()
@@ -410,6 +455,8 @@ export async function adminSaveProduct(
         is_active: productData.is_active ?? true,
         is_featured: productData.is_featured ?? false,
         is_new: productData.is_new ?? false,
+        in_clothing_rail: productData.in_clothing_rail ?? false,
+        rail_display_order: productData.rail_display_order ?? 0,
         details: productData.details || {},
         updated_at: new Date().toISOString(),
       })
@@ -429,7 +476,8 @@ export async function adminSaveProduct(
       image_url: img.image_url,
       alt_text: img.alt_text || productData.name,
       display_order: idx + 1,
-      is_primary: idx === 0,
+      is_primary: img.is_primary ?? (idx === 0),
+      view_type: img.view_type || 'standard',
     }))
     const { error: imgErr } = await supabase.from('product_images').insert(imagesToInsert)
     if (imgErr) console.error('Failed to save product images:', imgErr)

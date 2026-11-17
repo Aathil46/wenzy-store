@@ -12,6 +12,8 @@ import {
   ExternalLink,
   AlertCircle,
   Image as ImageIcon,
+  CheckCircle2,
+  Sparkles,
 } from 'lucide-react'
 import {
   adminGetProducts,
@@ -47,15 +49,25 @@ export default function AdminProducts() {
     is_active: true,
     is_featured: false,
     is_new: true,
+    in_clothing_rail: false,
+    rail_display_order: 0,
     fabric: '100% Combed Cotton French Terry',
     gsm: 240,
     fit: 'Oversized Boxy Fit',
     care: 'Machine wash cold inside out. Do not iron on print.',
   })
 
+  // Catalog images (standard view)
   const [images, setImages] = useState<{ image_url: string; alt_text?: string; is_primary?: boolean }[]>([])
   const [imageUrlInput, setImageUrlInput] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
+
+  // Dedicated WENZY RACK Cutout images
+  const [rackSideImage, setRackSideImage] = useState('')
+  const [rackFrontImage, setRackFrontImage] = useState('')
+  const [rackBackImage, setRackBackImage] = useState('')
+  const [rackDetailImage, setRackDetailImage] = useState('')
+  const [uploadingRackSlot, setUploadingRackSlot] = useState<'side' | 'front' | 'back' | 'detail' | null>(null)
 
   const [variants, setVariants] = useState<
     { size: string; color: string; sku?: string; stock_quantity: number }[]
@@ -90,12 +102,18 @@ export default function AdminProducts() {
       is_active: true,
       is_featured: false,
       is_new: true,
+      in_clothing_rail: false,
+      rail_display_order: 0,
       fabric: '100% Combed Cotton French Terry',
       gsm: 240,
       fit: 'Oversized Drop-Shoulder Fit',
       care: 'Machine wash cold inside out. Do not iron on print.',
     })
     setImages([])
+    setRackSideImage('')
+    setRackFrontImage('')
+    setRackBackImage('')
+    setRackDetailImage('')
     setVariants(
       DEFAULT_SIZES.map((s) => ({
         size: s,
@@ -120,20 +138,31 @@ export default function AdminProducts() {
       is_active: prod.is_active,
       is_featured: prod.is_featured,
       is_new: prod.is_new,
+      in_clothing_rail: prod.in_clothing_rail ?? false,
+      rail_display_order: prod.rail_display_order ?? 0,
       fabric: prod.details?.fabric || '100% Combed Cotton',
       gsm: prod.details?.gsm || 240,
       fit: prod.details?.fit || 'Oversized Boxy Fit',
       care: prod.details?.care || 'Machine wash cold inside out.',
     })
+
+    // Separate standard catalog gallery images from WENZY RACK cutout images
+    const allImgs = prod.images || []
+    const standardImgs = allImgs.filter((img) => !img.view_type || img.view_type === 'standard')
     setImages(
-      prod.images && prod.images.length > 0
-        ? prod.images.map((img) => ({
-            image_url: img.image_url,
-            alt_text: img.alt_text || '',
-            is_primary: img.is_primary,
-          }))
-        : []
+      standardImgs.map((img) => ({
+        image_url: img.image_url,
+        alt_text: img.alt_text || '',
+        is_primary: img.is_primary,
+      }))
     )
+
+    // Populate dedicated rack image slots
+    setRackSideImage(allImgs.find((img) => img.view_type === 'side')?.image_url || '')
+    setRackFrontImage(allImgs.find((img) => img.view_type === 'front')?.image_url || '')
+    setRackBackImage(allImgs.find((img) => img.view_type === 'back')?.image_url || '')
+    setRackDetailImage(allImgs.find((img) => img.view_type === 'detail')?.image_url || '')
+
     setVariants(
       prod.variants && prod.variants.length > 0
         ? prod.variants.map((v) => ({
@@ -146,6 +175,37 @@ export default function AdminProducts() {
     )
     setErrorMsg('')
     setModalOpen(true)
+  }
+
+  const handleRackImageUpload = async (
+    slot: 'side' | 'front' | 'back' | 'detail',
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingRackSlot(slot)
+    const res = await uploadImageToStorage(file, 'product-images')
+    setUploadingRackSlot(null)
+
+    if (res.error) {
+      alert(`Upload error: ${res.error}`)
+      return
+    }
+
+    if (res.url) {
+      if (slot === 'side') setRackSideImage(res.url)
+      else if (slot === 'front') setRackFrontImage(res.url)
+      else if (slot === 'back') setRackBackImage(res.url)
+      else if (slot === 'detail') setRackDetailImage(res.url)
+    }
+  }
+
+  const handleRemoveRackImage = (slot: 'side' | 'front' | 'back' | 'detail') => {
+    if (slot === 'side') setRackSideImage('')
+    else if (slot === 'front') setRackFrontImage('')
+    else if (slot === 'back') setRackBackImage('')
+    else if (slot === 'detail') setRackDetailImage('')
   }
 
   const handleNameChange = (name: string) => {
@@ -225,6 +285,56 @@ export default function AdminProducts() {
 
     setSaving(true)
     try {
+      // Assemble catalog images + dedicated WENZY RACK cutout images
+      const allImagesToSave = [
+        ...images.map((img) => ({
+          image_url: img.image_url,
+          alt_text: img.alt_text || formData.name,
+          is_primary: img.is_primary,
+          view_type: 'standard' as const,
+        })),
+        ...(rackSideImage
+          ? [
+              {
+                image_url: rackSideImage,
+                alt_text: `${formData.name} - Side Profile (Rail)`,
+                is_primary: false,
+                view_type: 'side' as const,
+              },
+            ]
+          : []),
+        ...(rackFrontImage
+          ? [
+              {
+                image_url: rackFrontImage,
+                alt_text: `${formData.name} - Front View`,
+                is_primary: false,
+                view_type: 'front' as const,
+              },
+            ]
+          : []),
+        ...(rackBackImage
+          ? [
+              {
+                image_url: rackBackImage,
+                alt_text: `${formData.name} - Back View`,
+                is_primary: false,
+                view_type: 'back' as const,
+              },
+            ]
+          : []),
+        ...(rackDetailImage
+          ? [
+              {
+                image_url: rackDetailImage,
+                alt_text: `${formData.name} - Detail View`,
+                is_primary: false,
+                view_type: 'detail' as const,
+              },
+            ]
+          : []),
+      ]
+
       await adminSaveProduct(
         {
           id: editingProduct?.id,
@@ -237,6 +347,8 @@ export default function AdminProducts() {
           is_active: formData.is_active,
           is_featured: formData.is_featured,
           is_new: formData.is_new,
+          in_clothing_rail: formData.in_clothing_rail,
+          rail_display_order: Number(formData.rail_display_order) || 0,
           details: {
             fabric: formData.fabric,
             gsm: Number(formData.gsm),
@@ -244,7 +356,7 @@ export default function AdminProducts() {
             care: formData.care,
           },
         },
-        images,
+        allImagesToSave,
         variants
       )
 
@@ -405,6 +517,30 @@ export default function AdminProducts() {
                           <span className="inline-block w-fit px-2 py-0.5 text-[9px] font-bold uppercase bg-black text-white rounded">
                             Featured
                           </span>
+                        )}
+                        {p.in_clothing_rail && (
+                          (() => {
+                            const imgs = p.images || []
+                            const hasSide = imgs.some((i) => i.view_type === 'side' && Boolean(i.image_url?.trim()))
+                            const hasFront = imgs.some((i) => i.view_type === 'front' && Boolean(i.image_url?.trim()))
+                            const hasBack = imgs.some((i) => i.view_type === 'back' && Boolean(i.image_url?.trim()))
+                            const isReady = hasSide && hasFront && hasBack
+                            return isReady ? (
+                              <span
+                                className="inline-block w-fit px-2 py-0.5 text-[9px] font-black uppercase bg-neutral-900 text-white rounded"
+                                title={`Live on WENZY RACK (Position ${p.rail_display_order || 0})`}
+                              >
+                                ★ Rack Ready #{p.rail_display_order || 0}
+                              </span>
+                            ) : (
+                              <span
+                                className="inline-block w-fit px-2 py-0.5 text-[9px] font-bold uppercase bg-amber-100 text-amber-800 rounded border border-amber-300"
+                                title="Missing required images: Side, Front, or Back cutout"
+                              >
+                                Rack Incomplete
+                              </span>
+                            )
+                          })()
                         )}
                       </div>
                     </td>
@@ -635,10 +771,251 @@ export default function AdminProducts() {
                   </div>
                 </div>
 
+                {/* WENZY RACK (Interactive Clothing Rail) Configuration */}
+                <div className="space-y-4 pt-4 border-t-2 border-neutral-900 bg-neutral-50 p-4 border rounded">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="p-1.5 bg-black text-white rounded">
+                        <Sparkles className="w-4 h-4" />
+                      </span>
+                      <div>
+                        <div className="font-heading font-black uppercase tracking-wider text-black text-sm">
+                          WENZY RACK (Interactive Clothing Rail)
+                        </div>
+                        <p className="text-[10px] text-neutral-500 uppercase tracking-wider">
+                          Configure 2.5D studio photographic cutouts for the homepage rail experience
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="in_clothing_rail"
+                          checked={formData.in_clothing_rail}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, in_clothing_rail: e.target.checked }))}
+                          className="w-4 h-4 text-black focus:ring-black rounded"
+                        />
+                        <label htmlFor="in_clothing_rail" className="font-black uppercase text-[11px] cursor-pointer text-black">
+                          Feature on WENZY RACK
+                        </label>
+                      </div>
+
+                      {formData.in_clothing_rail && (
+                        <div className="flex items-center gap-1.5">
+                          <label className="text-[10px] font-bold uppercase text-neutral-500">
+                            Position:
+                          </label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={formData.rail_display_order}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, rail_display_order: Number(e.target.value) }))}
+                            className="w-14 border border-neutral-300 px-2 py-1 text-xs font-black text-center bg-white"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {formData.in_clothing_rail && (
+                    <>
+                      {/* Rack Readiness Status Banner */}
+                      {(() => {
+                        const hasSide = Boolean(rackSideImage?.trim())
+                        const hasFront = Boolean(rackFrontImage?.trim())
+                        const hasBack = Boolean(rackBackImage?.trim())
+                        const isReady = hasSide && hasFront && hasBack
+                        const missing: string[] = []
+                        if (!hasSide) missing.push('Side-Profile Cutout')
+                        if (!hasFront) missing.push('Front View Cutout')
+                        if (!hasBack) missing.push('Back View Cutout')
+
+                        return isReady ? (
+                          <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 text-[11px] flex items-center gap-2.5">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>
+                              <strong>READY FOR WENZY RACK:</strong> All 3 required photographic cutouts are attached. This garment will be actively displayed on the homepage clothing rail.
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 text-[11px] flex items-center gap-2.5">
+                            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                            <div>
+                              <strong className="uppercase">Incomplete for Storefront Rail:</strong> Missing{' '}
+                              <span className="font-bold underline">{missing.join(', ')}</span>.
+                              <div className="text-[10px] text-amber-700 mt-0.5">
+                                Note: WENZY RACK strictly hides garments missing required images. You can save your draft now and upload cutouts later.
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })()}
+
+                      {/* 3 Dedicated Cutout Upload Slots */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                        {/* Slot 1: Side Profile */}
+                        <div className="bg-white border border-neutral-300 p-3 flex flex-col justify-between space-y-2">
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-bold uppercase tracking-wider text-black text-[11px]">
+                                1. Side Profile
+                              </span>
+                              <span className="px-1.5 py-0.5 bg-neutral-900 text-white text-[8px] font-black uppercase rounded">
+                                Mandatory for Rail
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-neutral-500 leading-tight">
+                              Transparent cutout hanging sideways on rail in resting state.
+                            </p>
+                          </div>
+
+                          <div className="relative aspect-3/4 w-full bg-[radial-gradient(#d1d5db_1px,transparent_1px)] [background-size:8px_8px] bg-neutral-100 border border-neutral-200 flex items-center justify-center overflow-hidden">
+                            {rackSideImage ? (
+                              <>
+                                <img src={rackSideImage} alt="Side Profile Cutout" className="h-full w-full object-contain p-2" />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveRackImage('side')}
+                                  className="absolute top-1 right-1 bg-black text-white p-1 rounded-full opacity-80 hover:opacity-100"
+                                  title="Remove side image"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </>
+                            ) : (
+                              <div className="text-center p-3 text-neutral-400">
+                                <ImageIcon className="w-6 h-6 mx-auto mb-1 opacity-40" />
+                                <span className="text-[9px] uppercase font-bold block">No Side Cutout</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <label className="btn-secondary text-[10px] flex items-center justify-center gap-1.5 cursor-pointer py-1.5">
+                            <Upload className="w-3 h-3" />
+                            <span>{uploadingRackSlot === 'side' ? 'Uploading...' : rackSideImage ? 'Replace Side Cutout' : 'Upload Side Cutout'}</span>
+                            <input
+                              type="file"
+                              accept="image/webp,image/png,image/*"
+                              disabled={uploadingRackSlot === 'side'}
+                              onChange={(e) => handleRackImageUpload('side', e)}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+
+                        {/* Slot 2: Front View */}
+                        <div className="bg-white border border-neutral-300 p-3 flex flex-col justify-between space-y-2">
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-bold uppercase tracking-wider text-black text-[11px]">
+                                2. Front View
+                              </span>
+                              <span className="px-1.5 py-0.5 bg-neutral-900 text-white text-[8px] font-black uppercase rounded">
+                                Mandatory for Focus
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-neutral-500 leading-tight">
+                              High-definition transparent front cutout for 3D modal view.
+                            </p>
+                          </div>
+
+                          <div className="relative aspect-3/4 w-full bg-[radial-gradient(#d1d5db_1px,transparent_1px)] [background-size:8px_8px] bg-neutral-100 border border-neutral-200 flex items-center justify-center overflow-hidden">
+                            {rackFrontImage ? (
+                              <>
+                                <img src={rackFrontImage} alt="Front View Cutout" className="h-full w-full object-contain p-2" />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveRackImage('front')}
+                                  className="absolute top-1 right-1 bg-black text-white p-1 rounded-full opacity-80 hover:opacity-100"
+                                  title="Remove front image"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </>
+                            ) : (
+                              <div className="text-center p-3 text-neutral-400">
+                                <ImageIcon className="w-6 h-6 mx-auto mb-1 opacity-40" />
+                                <span className="text-[9px] uppercase font-bold block">No Front Cutout</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <label className="btn-secondary text-[10px] flex items-center justify-center gap-1.5 cursor-pointer py-1.5">
+                            <Upload className="w-3 h-3" />
+                            <span>{uploadingRackSlot === 'front' ? 'Uploading...' : rackFrontImage ? 'Replace Front Cutout' : 'Upload Front Cutout'}</span>
+                            <input
+                              type="file"
+                              accept="image/webp,image/png,image/*"
+                              disabled={uploadingRackSlot === 'front'}
+                              onChange={(e) => handleRackImageUpload('front', e)}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+
+                        {/* Slot 3: Back View */}
+                        <div className="bg-white border border-neutral-300 p-3 flex flex-col justify-between space-y-2">
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-bold uppercase tracking-wider text-black text-[11px]">
+                                3. Back View
+                              </span>
+                              <span className="px-1.5 py-0.5 bg-neutral-900 text-white text-[8px] font-black uppercase rounded">
+                                Mandatory for Focus
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-neutral-500 leading-tight">
+                              Oversized back graphic cutout for interactive 3D flip.
+                            </p>
+                          </div>
+
+                          <div className="relative aspect-3/4 w-full bg-[radial-gradient(#d1d5db_1px,transparent_1px)] [background-size:8px_8px] bg-neutral-100 border border-neutral-200 flex items-center justify-center overflow-hidden">
+                            {rackBackImage ? (
+                              <>
+                                <img src={rackBackImage} alt="Back View Cutout" className="h-full w-full object-contain p-2" />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveRackImage('back')}
+                                  className="absolute top-1 right-1 bg-black text-white p-1 rounded-full opacity-80 hover:opacity-100"
+                                  title="Remove back image"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </>
+                            ) : (
+                              <div className="text-center p-3 text-neutral-400">
+                                <ImageIcon className="w-6 h-6 mx-auto mb-1 opacity-40" />
+                                <span className="text-[9px] uppercase font-bold block">No Back Cutout</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <label className="btn-secondary text-[10px] flex items-center justify-center gap-1.5 cursor-pointer py-1.5">
+                            <Upload className="w-3 h-3" />
+                            <span>{uploadingRackSlot === 'back' ? 'Uploading...' : rackBackImage ? 'Replace Back Cutout' : 'Upload Back Cutout'}</span>
+                            <input
+                              type="file"
+                              accept="image/webp,image/png,image/*"
+                              disabled={uploadingRackSlot === 'back'}
+                              onChange={(e) => handleRackImageUpload('back', e)}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
                 {/* Imagery Management */}
                 <div className="space-y-3 pt-3 border-t border-neutral-200">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold uppercase tracking-wider text-black">Product Photography</span>
+                    <div>
+                      <span className="font-bold uppercase tracking-wider text-black">Standard Catalog Photography</span>
+                      <p className="text-[10px] text-neutral-400 uppercase">Regular model and lookbook gallery images</p>
+                    </div>
                     <span className="text-neutral-400 text-[10px] uppercase font-bold">
                       {images.length} images attached
                     </span>

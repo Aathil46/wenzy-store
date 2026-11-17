@@ -66,6 +66,25 @@
   animation: fadeIn 0.25s var(--ease-out) forwards;
 }
 
+/* WENZY RACK Pendulum Sway Physics */
+@keyframes rackSway {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-2.8deg);
+  }
+  75% {
+    transform: rotate(2.8deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[rackSway_3s_ease-in-out_infinite\] {
+    animation: none !important;
+  }
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

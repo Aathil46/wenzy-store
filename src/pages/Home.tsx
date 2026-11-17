@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Star, ShieldCheck, Sparkles, AlertCircle, RefreshCw } from 'lucide-react'
 import ProductCard from '../components/ProductCard'
 import HeroBannerCarousel from '../components/HeroBannerCarousel'
+import WenzyRackSection from '../components/wenzy-rack/WenzyRackSection'
 import { getCategories, getProducts, getBanners } from '../lib/storeApi'
 import type { Category, Product, StorefrontBanner } from '../types/database'
 
@@ -42,7 +43,10 @@ export default function Home() {
       {/* 1. Dynamic Hero Banner Carousel (Directly under Header, Flush Layout) */}
       <HeroBannerCarousel banners={banners} />
 
-      {/* 2. New Arrivals (Directly under banner, matching reference design) */}
+      {/* 2. WENZY RACK (Interactive Clothing Rail - Directly under Hero Banner) */}
+      <WenzyRackSection />
+
+      {/* 3. New Arrivals (Directly under WENZY RACK) */}
       <section className="py-10 sm:py-14 border-b border-neutral-100">
         <div className="wrap">
           <div className="text-center mb-10">
