@@ -614,7 +614,7 @@ export async function adminGetBanners(): Promise<StorefrontBanner[]> {
 /** Create or update a banner record */
 export async function adminSaveBanner(banner: Partial<StorefrontBanner>): Promise<StorefrontBanner> {
   const payload = {
-    title: banner.title,
+    title: banner.title ? banner.title.trim() : null,
     media_type: banner.media_type,
     media_path: banner.media_path,
     mobile_media_path: banner.mobile_media_path || null,
@@ -628,13 +628,12 @@ export async function adminSaveBanner(banner: Partial<StorefrontBanner>): Promis
     display_order: banner.display_order ?? 0,
     duration_ms: banner.duration_ms ?? 5000,
     video_advance_mode: banner.video_advance_mode || 'duration',
-    overlay_opacity: banner.overlay_opacity ?? 0.4,
+    overlay_opacity: banner.overlay_opacity ?? 0,
     text_alignment: banner.text_alignment || 'left',
     text_color: banner.text_color || '#FFFFFF',
-    aspect_ratio: banner.aspect_ratio || 'banner',
-    custom_height: banner.custom_height ?? 480,
+    aspect_ratio: banner.aspect_ratio || '3:1',
+    crop_settings: banner.crop_settings || { desktop: { x: 0, y: 0, zoom: 1 }, mobile: { x: 0, y: 0, zoom: 1 } },
     object_fit: banner.object_fit || 'cover',
-    object_position: banner.object_position || 'center',
     is_active: banner.is_active ?? true,
     updated_at: new Date().toISOString(),
   }

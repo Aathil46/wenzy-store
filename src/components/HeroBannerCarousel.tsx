@@ -123,7 +123,7 @@ export default function HeroBannerCarousel({ banners }: HeroBannerCarouselProps)
   // Fallback state when 0 banners configured yet
   if (!banners || banners.length === 0) {
     return (
-      <section className="relative w-full h-[260px] sm:h-[360px] md:h-[440px] lg:h-[480px] bg-neutral-950 text-white flex items-center justify-center overflow-hidden">
+      <section className="relative w-full aspect-[1440/491] max-h-[500px] min-h-[240px] sm:min-h-[340px] md:min-h-[440px] bg-neutral-950 text-white flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0 bg-neutral-900">
           <img
             src="https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=2000&q=85"
@@ -160,35 +160,15 @@ export default function HeroBannerCarousel({ banners }: HeroBannerCarouselProps)
   const destinationLink = activeBanner ? getDestinationLink(activeBanner) : null
   const isExternal = destinationLink?.startsWith('http')
 
-  const getBannerHeightClass = (banner?: StorefrontBanner) => {
-    if (!banner) return 'h-[240px] sm:h-[340px] md:h-[420px] lg:h-[480px] xl:h-[520px]'
-    switch (banner.aspect_ratio) {
-      case 'square':
-        return 'h-[340px] sm:h-[460px] md:h-[520px] lg:h-[580px]'
-      case 'portrait':
-        return 'h-[380px] sm:h-[500px] md:h-[600px] lg:h-[680px]'
-      case 'widescreen':
-        return 'h-[240px] sm:h-[360px] md:h-[460px] lg:h-[540px]'
-      case 'ultrawide':
-        return 'h-[200px] sm:h-[280px] md:h-[360px] lg:h-[420px]'
-      case 'custom':
-        return ''
-      case 'banner':
-      default:
-        return 'h-[240px] sm:h-[340px] md:h-[420px] lg:h-[480px] xl:h-[520px]'
-    }
-  }
-
-  const sectionHeightClass = getBannerHeightClass(activeBanner)
-  const customSectionStyle =
-    activeBanner?.aspect_ratio === 'custom' && activeBanner?.custom_height
-      ? { height: `${activeBanner.custom_height}px` }
-      : undefined
+  // Aspect ratio presets: 3:1 (default, 1440 × 491px) or 16:9 (Landscape)
+  const is169 = activeBanner?.aspect_ratio === '16:9' || activeBanner?.aspect_ratio === 'widescreen'
+  const sectionRatioClass = is169
+    ? 'aspect-[16/9] max-h-[620px] min-h-[220px] sm:min-h-[360px] md:min-h-[460px] lg:min-h-[540px]'
+    : 'aspect-[1440/491] max-h-[500px] min-h-[200px] sm:min-h-[320px] md:min-h-[400px] lg:min-h-[480px]'
 
   return (
     <section
-      className={`relative w-full ${sectionHeightClass} bg-neutral-950 text-white flex items-center overflow-hidden select-none outline-none transition-all duration-500`}
-      style={customSectionStyle}
+      className={`relative w-full ${sectionRatioClass} bg-neutral-950 text-white flex items-center overflow-hidden select-none outline-none transition-all duration-500`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onKeyDown={handleKeyDown}
@@ -206,14 +186,10 @@ export default function HeroBannerCarousel({ banners }: HeroBannerCarouselProps)
         const slideLink = getDestinationLink(banner)
         const slideIsExternal = slideLink?.startsWith('http')
 
-        // Framing & focal classes
+        // Framing & Crop settings
         const fitClass = banner.object_fit === 'contain' ? 'object-contain' : 'object-cover'
-        const posClass =
-          banner.object_position === 'top'
-            ? 'object-top'
-            : banner.object_position === 'bottom'
-            ? 'object-bottom'
-            : 'object-center'
+        const desktopCrop = banner.crop_settings?.desktop || { x: 0, y: 0, zoom: 1 }
+        const mobileCrop = banner.crop_settings?.mobile || desktopCrop
 
         // Slide inner media element
         const MediaContent = (
@@ -232,7 +208,7 @@ export default function HeroBannerCarousel({ banners }: HeroBannerCarouselProps)
                       goToNext()
                     }
                   }}
-                  className={`w-full h-full ${fitClass} ${posClass} ${
+                  className={`w-full h-full ${fitClass} ${
                     banner.mobile_media_path ? 'hidden md:block' : 'block'
                   }`}
                 />
@@ -248,25 +224,43 @@ export default function HeroBannerCarousel({ banners }: HeroBannerCarouselProps)
                         goToNext()
                       }
                     }}
-                    className={`w-full h-full ${fitClass} ${posClass} md:hidden`}
+                    className={`w-full h-full ${fitClass} md:hidden`}
                   />
                 )}
               </div>
             ) : (
-              <picture className="absolute inset-0 w-full h-full flex items-center justify-center">
-                {banner.mobile_media_path && (
-                  <source media="(max-width: 767px)" srcSet={mobileUrl} />
-                )}
+              <div className="absolute inset-0 w-full h-full overflow-hidden flex items-center justify-center">
+                {/* Desktop Image with Live Crop Settings */}
                 <img
                   src={desktopUrl}
-                  alt={banner.heading || banner.title || 'WENZY Promotional Banner'}
-                  className={`w-full h-full ${fitClass} ${posClass}`}
+                  alt={banner.heading || 'WENZY Promotional Banner'}
+                  className={`w-full h-full ${fitClass} ${
+                    banner.mobile_media_path ? 'hidden md:block' : 'block'
+                  }`}
+                  style={{
+                    transform: `translate(${desktopCrop.x}%, ${desktopCrop.y}%) scale(${desktopCrop.zoom})`,
+                    transformOrigin: 'center center',
+                  }}
                   loading={index === 0 ? 'eager' : 'lazy'}
                 />
-              </picture>
+
+                {/* Mobile Image with Mobile Crop Settings (if mobile media uploaded) */}
+                {banner.mobile_media_path && (
+                  <img
+                    src={mobileUrl}
+                    alt={banner.heading || 'WENZY Promotional Banner'}
+                    className={`w-full h-full ${fitClass} md:hidden`}
+                    style={{
+                      transform: `translate(${mobileCrop.x}%, ${mobileCrop.y}%) scale(${mobileCrop.zoom})`,
+                      transformOrigin: 'center center',
+                    }}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                  />
+                )}
+              </div>
             )}
 
-            {/* Custom Overlay Opacity — Only applied if configured or if text exists */}
+            {/* Custom Overlay Opacity — Only applied if configured or if editorial text exists */}
             {(opacity > 0 || banner.heading) && (
               <div
                 className="absolute inset-0 bg-black pointer-events-none transition-opacity"
@@ -295,7 +289,7 @@ export default function HeroBannerCarousel({ banners }: HeroBannerCarouselProps)
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full h-full cursor-pointer"
-                  title={banner.title}
+                  title={banner.heading || undefined}
                 >
                   {MediaContent}
                 </a>
@@ -303,7 +297,7 @@ export default function HeroBannerCarousel({ banners }: HeroBannerCarouselProps)
                 <Link
                   to={slideLink}
                   className="block w-full h-full cursor-pointer"
-                  title={banner.title}
+                  title={banner.heading || undefined}
                 >
                   {MediaContent}
                 </Link>
@@ -315,7 +309,8 @@ export default function HeroBannerCarousel({ banners }: HeroBannerCarouselProps)
         )
       })}
 
-      {/* Optional Editorial Typography Overlay (If configured on active banner) */}
+      {/* Optional Editorial Typography Overlay (Customer-Facing Heading, Description, CTA) */}
+      {/* NOTE: Internal Title is strictly for admin identification and NOT displayed here */}
       {activeBanner && activeBanner.heading && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-20 pointer-events-none">
           <div
@@ -328,14 +323,6 @@ export default function HeroBannerCarousel({ banners }: HeroBannerCarouselProps)
             }`}
             style={{ color: activeBanner.text_color || '#FFFFFF' }}
           >
-            {/* Title / Badge */}
-            {activeBanner.title && (
-              <div className="inline-flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-3 py-1 rounded border border-white/20 font-accent text-[11px] font-bold uppercase tracking-widest text-white shadow-sm">
-                <Sparkles className="w-3 h-3 text-white" />
-                <span>{activeBanner.title}</span>
-              </div>
-            )}
-
             {/* Editorial Heading */}
             <h1 className="font-heading font-black text-2xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tight leading-[0.95] uppercase drop-shadow-md">
               {activeBanner.heading}

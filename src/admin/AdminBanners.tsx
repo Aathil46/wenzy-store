@@ -135,7 +135,7 @@ function SortableBannerItem({
           ) : (
             <img
               src={mediaUrl}
-              alt={banner.title}
+              alt={banner.title || 'Banner'}
               className="w-full h-full object-cover"
             />
           )}
@@ -157,7 +157,7 @@ function SortableBannerItem({
               #{banner.display_order}
             </span>
             <h3 className="text-sm font-black uppercase tracking-tight text-black truncate">
-              {banner.title}
+              {banner.title || 'Untitled Banner'}
             </h3>
             {banner.heading && (
               <span className="text-xs text-neutral-500 truncate hidden md:inline">
@@ -177,8 +177,8 @@ function SortableBannerItem({
             </span>
 
             <span className="inline-flex items-center gap-1 text-[10px] font-mono bg-neutral-100 text-neutral-700 px-1.5 py-0.5 border border-neutral-200 uppercase font-bold">
-              {banner.aspect_ratio || 'Banner (3.2:1)'}
-              {banner.object_fit === 'contain' ? ' • Fit' : ''}
+              {banner.aspect_ratio === '16:9' ? '16:9 Landscape' : '3:1 Banner'}
+              {banner.object_fit === 'contain' ? ' • Contain' : ' • Cover'}
             </span>
 
             {banner.mobile_media_path && (
@@ -284,6 +284,7 @@ export default function AdminBanners() {
 
   const handleToggleActive = async (banner: StorefrontBanner) => {
     const newStatus = !banner.is_active
+    const bannerName = banner.title || 'Untitled Banner'
     // Optimistic UI update
     setBanners((prev) =>
       prev.map((b) => (b.id === banner.id ? { ...b, is_active: newStatus } : b))
@@ -291,7 +292,7 @@ export default function AdminBanners() {
 
     try {
       await adminToggleBannerActive(banner.id, newStatus)
-      showNotification(`Banner "${banner.title}" is now ${newStatus ? 'active' : 'hidden'}.`)
+      showNotification(`Banner "${bannerName}" is now ${newStatus ? 'active' : 'hidden'}.`)
     } catch (err: any) {
       console.error('Error toggling banner status:', err)
       // Rollback
@@ -303,14 +304,15 @@ export default function AdminBanners() {
   }
 
   const handleDelete = async (banner: StorefrontBanner) => {
-    if (!confirm(`Are you sure you want to delete banner "${banner.title}"? This cannot be undone.`)) {
+    const bannerName = banner.title || 'Untitled Banner'
+    if (!confirm(`Are you sure you want to delete banner "${bannerName}"? This cannot be undone.`)) {
       return
     }
 
     try {
       await adminDeleteBanner(banner.id, banner.media_path, banner.mobile_media_path)
       setBanners((prev) => prev.filter((b) => b.id !== banner.id))
-      showNotification(`Banner "${banner.title}" deleted successfully.`)
+      showNotification(`Banner "${bannerName}" deleted successfully.`)
     } catch (err: any) {
       console.error('Failed to delete banner:', err)
       alert(`Failed to delete banner: ${err.message}`)

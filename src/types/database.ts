@@ -175,13 +175,23 @@ export type BannerMediaType = 'image' | 'video'
 export type BannerDestinationType = 'product' | 'category' | 'custom_url' | 'none'
 export type BannerVideoAdvanceMode = 'duration' | 'on_end'
 export type BannerTextAlignment = 'left' | 'center' | 'right'
-export type BannerAspectRatio = 'banner' | 'widescreen' | 'ultrawide' | 'square' | 'portrait' | 'custom'
+export type BannerAspectRatio = '3:1' | '16:9' | 'banner' | 'widescreen'
 export type BannerObjectFit = 'cover' | 'contain'
-export type BannerObjectPosition = 'center' | 'top' | 'bottom'
+
+export interface CropData {
+  x: number // percentage offset (-100 to 100)
+  y: number // percentage offset (-100 to 100)
+  zoom: number // scale factor (1 to 3)
+}
+
+export interface BannerCropSettings {
+  desktop: CropData
+  mobile: CropData
+}
 
 export interface StorefrontBanner {
   id: string
-  title: string
+  title?: string | null
   media_type: BannerMediaType
   media_path: string
   mobile_media_path?: string | null
@@ -199,9 +209,8 @@ export interface StorefrontBanner {
   text_alignment: BannerTextAlignment
   text_color: string
   aspect_ratio?: BannerAspectRatio
-  custom_height?: number
+  crop_settings?: BannerCropSettings | null
   object_fit?: BannerObjectFit
-  object_position?: BannerObjectPosition
   is_active: boolean
   created_at: string
   updated_at: string

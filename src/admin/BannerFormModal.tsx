@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   X,
   Upload,
@@ -9,8 +9,9 @@ import {
   Check,
   Sliders,
   Crop,
-  Maximize2,
   Eye,
+  RotateCcw,
+  Move,
 } from 'lucide-react'
 import {
   adminSaveBanner,
@@ -27,7 +28,8 @@ import type {
   BannerTextAlignment,
   BannerAspectRatio,
   BannerObjectFit,
-  BannerObjectPosition,
+  BannerCropSettings,
+  CropData,
   Category,
   Product,
 } from '../types/database'
@@ -39,6 +41,8 @@ interface BannerFormModalProps {
   editingBanner: StorefrontBanner | null
   currentCount: number
 }
+
+const DEFAULT_CROP: CropData = { x: 0, y: 0, zoom: 1 }
 
 export default function BannerFormModal({
   isOpen,
@@ -76,11 +80,19 @@ export default function BannerFormModal({
   const [textColor, setTextColor] = useState('#FFFFFF')
   const [isActive, setIsActive] = useState(true)
 
-  // Instagram-Style Framing & Ratio Controls
-  const [aspectRatio, setAspectRatio] = useState<BannerAspectRatio>('banner')
-  const [customHeight, setCustomHeight] = useState(480)
+  // Aspect Ratio: ONLY TWO OPTIONS ('3:1' default or '16:9')
+  const [aspectRatio, setAspectRatio] = useState<BannerAspectRatio>('3:1')
   const [objectFit, setObjectFit] = useState<BannerObjectFit>('cover')
-  const [objectPosition, setObjectPosition] = useState<BannerObjectPosition>('center')
+
+  // Live Interactive Crop State
+  const [cropSettings, setCropSettings] = useState<BannerCropSettings>({
+    desktop: { ...DEFAULT_CROP },
+    mobile: { ...DEFAULT_CROP },
+  })
+  const [activeCropTarget, setActiveCropTarget] = useState<'desktop' | 'mobile'>('desktop')
+  const [isDragging, setIsDragging] = useState(false)
+  const dragStartRef = useRef<{ clientX: number; clientY: number; cropX: number; cropY: number } | null>(null)
+  const cropContainerRef = useRef<HTMLDivElement | null>(null)
 
   // Load categories and products for destination selection
   useEffect(() => {
@@ -108,7 +120,7 @@ export default function BannerFormModal({
     if (!isOpen) return
 
     if (editingBanner) {
-      setTitle(editingBanner.title)
+      setTitle(editingBanner.title || '')
       setHeading(editingBanner.heading || '')
       setDescription(editingBanner.description || '')
       setButtonText(editingBanner.button_text || '')
@@ -125,10 +137,35 @@ export default function BannerFormModal({
       setOverlayOpacity(editingBanner.overlay_opacity ?? 0)
       setTextAlignment(editingBanner.text_alignment)
       setTextColor(editingBanner.text_color || '#FFFFFF')
-      setAspectRatio(editingBanner.aspect_ratio || 'banner')
-      setCustomHeight(editingBanner.custom_height ?? 480)
+
+      // Normalize to 3:1 or 16:9
+      const ratio = editingBanner.aspect_ratio === '16:9' || editingBanner.aspect_ratio === 'widescreen'
+        ? '16:9'
+        : '3:1'
+      setAspectRatio(ratio)
       setObjectFit(editingBanner.object_fit || 'cover')
-      setObjectPosition(editingBanner.object_position || 'center')
+
+      // Restore crop settings if present
+      if (editingBanner.crop_settings && typeof editingBanner.crop_settings === 'object') {
+        setCropSettings({
+          desktop: {
+            x: Number(editingBanner.crop_settings.desktop?.x ?? 0),
+            y: Number(editingBanner.crop_settings.desktop?.y ?? 0),
+            zoom: Number(editingBanner.crop_settings.desktop?.zoom ?? 1),
+          },
+          mobile: {
+            x: Number(editingBanner.crop_settings.mobile?.x ?? 0),
+            y: Number(editingBanner.crop_settings.mobile?.y ?? 0),
+            zoom: Number(editingBanner.crop_settings.mobile?.zoom ?? 1),
+          },
+        })
+      } else {
+        setCropSettings({
+          desktop: { ...DEFAULT_CROP },
+          mobile: { ...DEFAULT_CROP },
+        })
+      }
+
       setIsActive(editingBanner.is_active)
     } else {
       setTitle('')
@@ -148,12 +185,15 @@ export default function BannerFormModal({
       setOverlayOpacity(0)
       setTextAlignment('left')
       setTextColor('#FFFFFF')
-      setAspectRatio('banner')
-      setCustomHeight(480)
+      setAspectRatio('3:1') // Default 3:1 Standard Website Banner
       setObjectFit('cover')
-      setObjectPosition('center')
+      setCropSettings({
+        desktop: { ...DEFAULT_CROP },
+        mobile: { ...DEFAULT_CROP },
+      })
       setIsActive(true)
     }
+    setActiveCropTarget('desktop')
     setErrorMsg('')
   }, [isOpen, editingBanner, currentCount])
 
@@ -212,15 +252,64 @@ export default function BannerFormModal({
     }
   }
 
+  // Interactive Live Drag Handlers
+  const currentCrop = cropSettings[activeCropTarget] || DEFAULT_CROP
+
+  const updateCurrentCrop = (partial: Partial<CropData>) => {
+    setCropSettings((prev) => ({
+      ...prev,
+      [activeCropTarget]: {
+        ...prev[activeCropTarget],
+        ...partial,
+      },
+    }))
+  }
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (mediaType === 'video') return
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setIsDragging(true)
+    dragStartRef.current = {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      cropX: currentCrop.x,
+      cropY: currentCrop.y,
+    }
+  }
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging || !dragStartRef.current || !cropContainerRef.current) return
+    const rect = cropContainerRef.current.getBoundingClientRect()
+    const dx = e.clientX - dragStartRef.current.clientX
+    const dy = e.clientY - dragStartRef.current.clientY
+
+    // Convert pixel delta to percentage of container
+    const deltaX = (dx / rect.width) * 100
+    const deltaY = (dy / rect.height) * 100
+
+    const newX = Math.max(-80, Math.min(80, Math.round((dragStartRef.current.cropX + deltaX) * 10) / 10))
+    const newY = Math.max(-80, Math.min(80, Math.round((dragStartRef.current.cropY + deltaY) * 10) / 10))
+
+    updateCurrentCrop({ x: newX, y: newY })
+  }
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    setIsDragging(false)
+    dragStartRef.current = null
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {}
+  }
+
+  const handleResetCrop = () => {
+    updateCurrentCrop({ x: 0, y: 0, zoom: 1 })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg('')
 
-    if (!title.trim()) {
-      setErrorMsg('Banner title is required.')
-      return
-    }
-
+    // Banner title is now OPTIONAL
     if (!mediaPath.trim()) {
       setErrorMsg('Please upload or provide a desktop media file.')
       return
@@ -235,7 +324,7 @@ export default function BannerFormModal({
     try {
       await adminSaveBanner({
         id: editingBanner?.id,
-        title: title.trim(),
+        title: title.trim() || null, // Optional
         heading: heading.trim() || null,
         description: description.trim() || null,
         button_text: buttonText.trim() || null,
@@ -253,9 +342,8 @@ export default function BannerFormModal({
         text_alignment: textAlignment,
         text_color: textColor || '#FFFFFF',
         aspect_ratio: aspectRatio,
-        custom_height: Number(customHeight) || 480,
+        crop_settings: cropSettings,
         object_fit: objectFit,
-        object_position: objectPosition,
         is_active: isActive,
       })
 
@@ -271,6 +359,9 @@ export default function BannerFormModal({
 
   const desktopPreviewUrl = mediaPath ? getBannerPublicUrl(mediaPath) : ''
   const mobilePreviewUrl = mobileMediaPath ? getBannerPublicUrl(mobileMediaPath) : ''
+  const currentPreviewUrl = activeCropTarget === 'mobile' && mobilePreviewUrl ? mobilePreviewUrl : desktopPreviewUrl
+
+  const is169 = aspectRatio === '16:9' || aspectRatio === 'widescreen'
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
@@ -282,7 +373,7 @@ export default function BannerFormModal({
               {editingBanner ? 'Edit Banner Slide' : 'Create New Banner Slide'}
             </h2>
             <p className="text-[11px] text-neutral-500 uppercase tracking-wider mt-0.5">
-              Configure media, Instagram-style framing presets, destination links, and playback behavior.
+              Aspect ratio presets, live drag-and-zoom cropping, and playback settings.
             </p>
           </div>
           <button
@@ -311,12 +402,11 @@ export default function BannerFormModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="block font-bold uppercase tracking-wider text-neutral-700">
-                  Internal Title <span className="text-red-500">*</span>
+                  Internal Title <span className="text-neutral-400 font-normal">(Optional admin reference)</span>
                 </label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g. DOOM IS HERE Drop 9"
+                  placeholder="e.g. DOOM IS HERE Drop 9 (leave empty for Untitled Banner)"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="input-field w-full text-xs"
@@ -343,7 +433,7 @@ export default function BannerFormModal({
 
             <div className="space-y-1">
               <label className="block font-bold uppercase tracking-wider text-neutral-700">
-                Editorial Heading <span className="text-neutral-400 font-normal">(Optional — leave blank if graphic creative already has text)</span>
+                Editorial Heading <span className="text-neutral-400 font-normal">(Optional — shown on storefront overlay)</span>
               </label>
               <input
                 type="text"
@@ -572,162 +662,299 @@ export default function BannerFormModal({
             </div>
           </div>
 
-          {/* Section 3: Instagram-Style Ratio & Framing Adjustments */}
+          {/* Section 3: Aspect Ratio & Live Drag-and-Zoom Crop Editor */}
           <div className="space-y-4 bg-neutral-50 p-4 border border-neutral-200">
             <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
               <div className="flex items-center gap-2 text-neutral-900 font-bold uppercase tracking-wider">
                 <Crop className="w-4 h-4 text-black" />
-                <span>3. Instagram-Style Framing & Aspect Ratio Controls</span>
+                <span>3. Aspect Ratio & Live Interactive Crop</span>
               </div>
-              <span className="text-[10px] text-neutral-500 uppercase font-mono">Reference Presets</span>
+              <span className="text-[10px] text-neutral-500 uppercase font-mono">Instagram-Style Pan & Zoom</span>
             </div>
 
-            {/* Aspect Ratio Selector */}
+            {/* Aspect Ratio Selector — EXACTLY TWO PRESETS */}
             <div className="space-y-2">
               <label className="block font-bold uppercase tracking-wider text-neutral-700 text-[11px]">
-                Aspect Ratio / Format Presets
+                Aspect Ratio / Format Preset
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {[
-                  { id: 'banner', label: 'E-Commerce Hero', tag: '3.2:1 (~480px)', desc: 'The Souled Store' },
-                  { id: 'widescreen', label: 'Landscape (16:9)', tag: '16:9 (~560px)', desc: 'Instagram Video' },
-                  { id: 'ultrawide', label: 'Cinema (21:9)', tag: '21:9 (~420px)', desc: 'Panoramic Hero' },
-                  { id: 'square', label: 'Square Post', tag: '1:1 (~500px)', desc: 'Instagram Classic' },
-                  { id: 'portrait', label: 'Portrait Feed', tag: '4:5 (~650px)', desc: 'Instagram Editorial' },
-                  { id: 'custom', label: 'Custom Slider', tag: `${customHeight}px`, desc: 'Custom Height' },
-                ].map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => setAspectRatio(preset.id as BannerAspectRatio)}
-                    className={`p-2.5 border text-left transition-all ${
-                      aspectRatio === preset.id
-                        ? 'bg-black text-white border-black shadow-sm'
-                        : 'bg-white text-neutral-800 border-neutral-300 hover:border-black'
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setAspectRatio('3:1')}
+                  className={`p-3 border text-left transition-all ${
+                    aspectRatio === '3:1' || aspectRatio === 'banner'
+                      ? 'bg-black text-white border-black shadow-xs ring-2 ring-black/20'
+                      : 'bg-white text-neutral-800 border-neutral-300 hover:border-black'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold uppercase tracking-wider text-xs">Standard Website Banner</span>
+                    <span
+                      className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                        aspectRatio === '3:1' || aspectRatio === 'banner'
+                          ? 'bg-white/20 text-white'
+                          : 'bg-neutral-100 text-neutral-700'
+                      }`}
+                    >
+                      DEFAULT
+                    </span>
+                  </div>
+                  <div
+                    className={`text-[11px] font-mono mt-1 ${
+                      aspectRatio === '3:1' || aspectRatio === 'banner'
+                        ? 'text-neutral-200'
+                        : 'text-neutral-500'
                     }`}
                   >
-                    <div className="font-bold uppercase tracking-wider text-[11px]">
-                      {preset.label}
-                    </div>
-                    <div className={`text-[10px] font-mono mt-0.5 ${aspectRatio === preset.id ? 'text-neutral-300' : 'text-neutral-500'}`}>
-                      {preset.tag}
-                    </div>
-                  </button>
-                ))}
+                    3:1 Aspect Ratio (1440 × 491px)
+                  </div>
+                  <div
+                    className={`text-[10px] mt-0.5 ${
+                      aspectRatio === '3:1' || aspectRatio === 'banner'
+                        ? 'text-neutral-300'
+                        : 'text-neutral-400'
+                    }`}
+                  >
+                    Standard e-commerce hero banner
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAspectRatio('16:9')}
+                  className={`p-3 border text-left transition-all ${
+                    aspectRatio === '16:9' || aspectRatio === 'widescreen'
+                      ? 'bg-black text-white border-black shadow-xs ring-2 ring-black/20'
+                      : 'bg-white text-neutral-800 border-neutral-300 hover:border-black'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold uppercase tracking-wider text-xs">Landscape</span>
+                    <span
+                      className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                        aspectRatio === '16:9' || aspectRatio === 'widescreen'
+                          ? 'bg-white/20 text-white'
+                          : 'bg-neutral-100 text-neutral-700'
+                      }`}
+                    >
+                      16:9
+                    </span>
+                  </div>
+                  <div
+                    className={`text-[11px] font-mono mt-1 ${
+                      aspectRatio === '16:9' || aspectRatio === 'widescreen'
+                        ? 'text-neutral-200'
+                        : 'text-neutral-500'
+                    }`}
+                  >
+                    16:9 Aspect Ratio (1920 × 1080px)
+                  </div>
+                  <div
+                    className={`text-[10px] mt-0.5 ${
+                      aspectRatio === '16:9' || aspectRatio === 'widescreen'
+                        ? 'text-neutral-300'
+                        : 'text-neutral-400'
+                    }`}
+                  >
+                    Widescreen cinematic format
+                  </div>
+                </button>
               </div>
             </div>
 
-            {/* Custom Height Slider (if custom selected) */}
-            {aspectRatio === 'custom' && (
-              <div className="space-y-1 pt-2 bg-white p-3 border border-neutral-200">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold uppercase tracking-wider text-neutral-700">
-                    Adjust Banner Height:
-                  </span>
-                  <span className="font-mono font-bold text-black">{customHeight} px</span>
+            {/* Framing Mode: Cover vs Contain */}
+            <div className="space-y-1.5 pt-1">
+              <label className="block font-bold uppercase tracking-wider text-neutral-700 text-[11px]">
+                Framing Mode
+              </label>
+              <div className="grid grid-cols-2 gap-2 max-w-sm">
+                <button
+                  type="button"
+                  onClick={() => setObjectFit('cover')}
+                  className={`p-2 border text-center font-bold uppercase tracking-wider text-[11px] transition-all ${
+                    objectFit === 'cover'
+                      ? 'bg-black text-white border-black'
+                      : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
+                  }`}
+                >
+                  Cover (Fill Area)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setObjectFit('contain')}
+                  className={`p-2 border text-center font-bold uppercase tracking-wider text-[11px] transition-all ${
+                    objectFit === 'contain'
+                      ? 'bg-black text-white border-black'
+                      : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
+                  }`}
+                >
+                  Contain (Full Image)
+                </button>
+              </div>
+            </div>
+
+            {/* Target Selector (Desktop vs Mobile Media Crop) */}
+            {mobileMediaPath && (
+              <div className="flex items-center gap-2 pt-2 border-t border-neutral-200">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-700">
+                  Editing Crop For:
+                </span>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setActiveCropTarget('desktop')}
+                    className={`px-3 py-1 text-xs font-bold uppercase tracking-wider border transition-colors ${
+                      activeCropTarget === 'desktop'
+                        ? 'bg-black text-white border-black'
+                        : 'bg-white text-neutral-600 border-neutral-300 hover:border-black'
+                    }`}
+                  >
+                    Desktop Media Crop
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveCropTarget('mobile')}
+                    className={`px-3 py-1 text-xs font-bold uppercase tracking-wider border transition-colors ${
+                      activeCropTarget === 'mobile'
+                        ? 'bg-black text-white border-black'
+                        : 'bg-white text-neutral-600 border-neutral-300 hover:border-black'
+                    }`}
+                  >
+                    Mobile Media Crop
+                  </button>
                 </div>
-                <input
-                  type="range"
-                  min="220"
-                  max="750"
-                  step="10"
-                  value={customHeight}
-                  onChange={(e) => setCustomHeight(Number(e.target.value))}
-                  className="w-full accent-black cursor-pointer"
-                />
               </div>
             )}
 
-            {/* Crop Fit & Focal Alignment */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              {/* Crop Mode: Cover vs Contain */}
-              <div className="space-y-1.5">
-                <label className="block font-bold uppercase tracking-wider text-neutral-700 text-[11px]">
-                  Framing Mode (Zoom to Fill vs Fit)
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setObjectFit('cover')}
-                    className={`p-2 border text-center font-bold uppercase tracking-wider text-[10px] transition-all ${
-                      objectFit === 'cover'
-                        ? 'bg-black text-white border-black'
-                        : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
-                    }`}
-                  >
-                    Cover (Fill Area)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setObjectFit('contain')}
-                    className={`p-2 border text-center font-bold uppercase tracking-wider text-[10px] transition-all ${
-                      objectFit === 'contain'
-                        ? 'bg-black text-white border-black'
-                        : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
-                    }`}
-                  >
-                    Contain (Full Image)
-                  </button>
+            {/* Live Interactive Crop Canvas */}
+            {mediaPath ? (
+              <div className="pt-2 space-y-2">
+                <div className="flex items-center justify-between text-neutral-600 text-[11px]">
+                  <div className="flex items-center gap-1.5 font-bold uppercase">
+                    <Move className="w-3.5 h-3.5 text-black" />
+                    <span>
+                      Live Interactive Crop Preview ({is169 ? '16:9 Landscape' : '3:1 Standard Website Banner'})
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-neutral-400">
+                    {mediaType === 'image' ? 'Drag image to reposition • Use slider to zoom' : 'Video Framing Preview'}
+                  </span>
                 </div>
-              </div>
 
-              {/* Focal Position: Top, Center, Bottom */}
-              <div className="space-y-1.5">
-                <label className="block font-bold uppercase tracking-wider text-neutral-700 text-[11px]">
-                  Focal Alignment (Drag Point)
-                </label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(['top', 'center', 'bottom'] as BannerObjectPosition[]).map((pos) => (
-                    <button
-                      key={pos}
-                      type="button"
-                      onClick={() => setObjectPosition(pos)}
-                      className={`p-2 border text-center font-bold uppercase tracking-wider text-[10px] transition-all ${
-                        objectPosition === pos
-                          ? 'bg-black text-white border-black'
-                          : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
-                      }`}
-                    >
-                      {pos}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Live Interactive Preview Box */}
-            {mediaPath && (
-              <div className="pt-2">
-                <div className="flex items-center gap-1.5 text-neutral-500 font-bold uppercase text-[10px] mb-1">
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Live Crop & Framing Preview:</span>
-                </div>
-                <div className="w-full bg-neutral-950 border border-neutral-300 overflow-hidden relative flex items-center justify-center h-44 rounded-xs">
+                {/* Aspect-Locked Canvas */}
+                <div
+                  ref={cropContainerRef}
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                  onPointerCancel={handlePointerUp}
+                  style={{
+                    aspectRatio: is169 ? '16 / 9' : '1440 / 491',
+                  }}
+                  className={`w-full max-h-[300px] bg-neutral-950 border border-neutral-300 overflow-hidden relative select-none touch-none rounded-none flex items-center justify-center ${
+                    mediaType === 'image'
+                      ? isDragging
+                        ? 'cursor-grabbing'
+                        : 'cursor-grab'
+                      : 'cursor-default'
+                  }`}
+                >
                   {mediaType === 'video' ? (
                     <video
-                      src={desktopPreviewUrl}
+                      src={currentPreviewUrl}
                       muted
                       autoPlay
                       loop
-                      className={`w-full h-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'} ${
-                        objectPosition === 'top' ? 'object-top' : objectPosition === 'bottom' ? 'object-bottom' : 'object-center'
+                      className={`w-full h-full pointer-events-none ${
+                        objectFit === 'contain' ? 'object-contain' : 'object-cover'
                       }`}
                     />
                   ) : (
                     <img
-                      src={desktopPreviewUrl}
-                      alt="Preview"
-                      className={`w-full h-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'} ${
-                        objectPosition === 'top' ? 'object-top' : objectPosition === 'bottom' ? 'object-bottom' : 'object-center'
+                      src={currentPreviewUrl}
+                      alt="Live Crop Preview"
+                      draggable={false}
+                      className={`w-full h-full pointer-events-none select-none transition-transform duration-75 ease-out ${
+                        objectFit === 'contain' ? 'object-contain' : 'object-cover'
                       }`}
+                      style={{
+                        transform: `translate(${currentCrop.x}%, ${currentCrop.y}%) scale(${currentCrop.zoom})`,
+                        transformOrigin: 'center center',
+                      }}
                     />
                   )}
+
+                  {/* Instagram-style 3x3 Rule-of-Thirds Grid Overlay */}
+                  {mediaType === 'image' && (
+                    <div
+                      className={`absolute inset-0 pointer-events-none grid grid-cols-3 grid-rows-3 transition-opacity duration-200 ${
+                        isDragging ? 'opacity-40' : 'opacity-20 hover:opacity-35'
+                      }`}
+                    >
+                      <div className="border-r border-b border-white/60" />
+                      <div className="border-r border-b border-white/60" />
+                      <div className="border-b border-white/60" />
+                      <div className="border-r border-b border-white/60" />
+                      <div className="border-r border-b border-white/60" />
+                      <div className="border-b border-white/60" />
+                      <div className="border-r border-white/60" />
+                      <div className="border-r border-white/60" />
+                      <div />
+                    </div>
+                  )}
+
+                  {/* Heading Overlay Preview */}
                   {heading && (
-                    <div className="absolute inset-0 bg-black/30 flex items-center p-4">
-                      <div className="text-white font-black uppercase text-sm drop-shadow">{heading}</div>
+                    <div className="absolute inset-0 bg-black/25 flex items-center p-4 pointer-events-none">
+                      <div className="text-white font-black uppercase text-sm drop-shadow">
+                        {heading}
+                      </div>
                     </div>
                   )}
                 </div>
+
+                {/* Crop Controls: Zoom Slider + Reset Button */}
+                {mediaType === 'image' && (
+                  <div className="bg-white p-3 border border-neutral-200 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+                      <span className="text-xs font-bold uppercase tracking-wider text-neutral-700 flex items-center gap-1.5 flex-shrink-0">
+                        <Sliders className="w-3.5 h-3.5" />
+                        Zoom:
+                      </span>
+                      <input
+                        type="range"
+                        min="1"
+                        max="3"
+                        step="0.05"
+                        value={currentCrop.zoom}
+                        onChange={(e) => updateCurrentCrop({ zoom: Number(e.target.value) })}
+                        className="flex-1 accent-black cursor-pointer"
+                      />
+                      <span className="text-xs font-mono font-bold w-12 text-right text-neutral-800">
+                        {currentCrop.zoom.toFixed(2)}x
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="text-[10px] font-mono text-neutral-500">
+                        X: {currentCrop.x > 0 ? `+${currentCrop.x}` : currentCrop.x}% | Y:{' '}
+                        {currentCrop.y > 0 ? `+${currentCrop.y}` : currentCrop.y}%
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleResetCrop}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border border-neutral-300 transition-colors"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Reset Crop</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-6 border-2 border-dashed border-neutral-200 text-center text-neutral-400 uppercase tracking-wider text-xs">
+                Upload desktop media above to enable interactive crop editor
               </div>
             )}
           </div>
