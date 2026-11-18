@@ -7,16 +7,16 @@ import RackTrack from './RackTrack'
 import RackFocusModal from './RackFocusModal'
 
 /**
- * Built-in preview pieces available before real custom studio cutouts
- * are uploaded via Admin Products, allowing the user to immediately experience
- * the clothing rail, hover lift, pendulum sway, drag momentum, and 3D flip modal.
+ * Built-in preview pieces with authentic high-resolution studio cutouts,
+ * demonstrating natural hanging drape, 3D hover turn, and FLIP inspection
+ * before custom pieces are uploaded via the admin portal.
  */
 const DEMO_SHOWCASE_PIECES: Product[] = [
   {
     id: 'demo-rack-1',
-    name: 'OVERSIZED ACID WASH HOODIE',
-    slug: 'oversized-acid-wash-hoodie',
-    description: 'Heavyweight 240+ GSM combed French Terry with vintage mineral fade.',
+    name: 'OVERSIZED VINTAGE HOODIE',
+    slug: 'oversized-vintage-hoodie',
+    description: 'Heavyweight 240+ GSM combed French Terry with vintage mineral wash.',
     price: 1999,
     compare_at_price: 2999,
     is_active: true,
@@ -33,7 +33,7 @@ const DEMO_SHOWCASE_PIECES: Product[] = [
       {
         id: 'img-demo-1-side',
         product_id: 'demo-rack-1',
-        image_url: '/assets/wenzy_front_texture.png',
+        image_url: 'https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514447647.webp',
         display_order: 1,
         is_primary: false,
         view_type: 'side',
@@ -42,7 +42,7 @@ const DEMO_SHOWCASE_PIECES: Product[] = [
       {
         id: 'img-demo-1-front',
         product_id: 'demo-rack-1',
-        image_url: '/assets/wenzy_front_texture.png',
+        image_url: 'https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514403809.webp',
         display_order: 2,
         is_primary: true,
         view_type: 'front',
@@ -51,7 +51,7 @@ const DEMO_SHOWCASE_PIECES: Product[] = [
       {
         id: 'img-demo-1-back',
         product_id: 'demo-rack-1',
-        image_url: '/assets/wenzy_back_texture.png',
+        image_url: 'https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514388245.webp',
         display_order: 3,
         is_primary: false,
         view_type: 'back',
@@ -59,36 +59,36 @@ const DEMO_SHOWCASE_PIECES: Product[] = [
       },
     ],
     variants: [
-      { id: 'v1-s', product_id: 'demo-rack-1', size: 'S', color: 'Vintage Black', stock_quantity: 8, created_at: '', updated_at: '' },
-      { id: 'v1-m', product_id: 'demo-rack-1', size: 'M', color: 'Vintage Black', stock_quantity: 12, created_at: '', updated_at: '' },
-      { id: 'v1-l', product_id: 'demo-rack-1', size: 'L', color: 'Vintage Black', stock_quantity: 5, created_at: '', updated_at: '' },
-      { id: 'v1-xl', product_id: 'demo-rack-1', size: 'XL', color: 'Vintage Black', stock_quantity: 0, created_at: '', updated_at: '' },
+      { id: 'v1-s', product_id: 'demo-rack-1', size: 'S', color: 'Vintage Grey', stock_quantity: 8, created_at: '', updated_at: '' },
+      { id: 'v1-m', product_id: 'demo-rack-1', size: 'M', color: 'Vintage Grey', stock_quantity: 12, created_at: '', updated_at: '' },
+      { id: 'v1-l', product_id: 'demo-rack-1', size: 'L', color: 'Vintage Grey', stock_quantity: 5, created_at: '', updated_at: '' },
+      { id: 'v1-xl', product_id: 'demo-rack-1', size: 'XL', color: 'Vintage Grey', stock_quantity: 2, created_at: '', updated_at: '' },
     ],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
   {
     id: 'demo-rack-2',
-    name: 'CYBER CREST BOXY TEE',
-    slug: 'cyber-crest-boxy-tee',
-    description: 'High-density screenprint chest logo with oversized streetwear back print.',
-    price: 1299,
-    compare_at_price: 1899,
+    name: 'BRUTALIST TAILORED BLAZER',
+    slug: 'brutalist-tailored-blazer',
+    description: 'Structured architectural blazer with raw edge finish and industrial hardware.',
+    price: 3499,
+    compare_at_price: 4999,
     is_active: true,
     is_featured: true,
     is_new: true,
     in_clothing_rail: true,
     rail_display_order: 2,
     details: {
-      fabric: '100% Combed Cotton Single Jersey',
-      gsm: 240,
-      fit: 'Drop Shoulder Relaxed Fit',
+      fabric: 'Heavy Cotton Canvas Blend',
+      gsm: 320,
+      fit: 'Relaxed Tailored Silhouette',
     },
     images: [
       {
         id: 'img-demo-2-side',
         product_id: 'demo-rack-2',
-        image_url: '/assets/wenzy_front_texture.png',
+        image_url: 'https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071515248388.webp',
         display_order: 1,
         is_primary: false,
         view_type: 'side',
@@ -97,7 +97,7 @@ const DEMO_SHOWCASE_PIECES: Product[] = [
       {
         id: 'img-demo-2-front',
         product_id: 'demo-rack-2',
-        image_url: '/assets/wenzy_front_texture.png',
+        image_url: 'https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514560224.webp',
         display_order: 2,
         is_primary: true,
         view_type: 'front',
@@ -106,7 +106,7 @@ const DEMO_SHOWCASE_PIECES: Product[] = [
       {
         id: 'img-demo-2-back',
         product_id: 'demo-rack-2',
-        image_url: '/assets/wenzy_back_texture.png',
+        image_url: 'https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514492742.webp',
         display_order: 3,
         is_primary: false,
         view_type: 'back',
@@ -114,36 +114,35 @@ const DEMO_SHOWCASE_PIECES: Product[] = [
       },
     ],
     variants: [
-      { id: 'v2-s', product_id: 'demo-rack-2', size: 'S', color: 'Washed Charcoal', stock_quantity: 10, created_at: '', updated_at: '' },
-      { id: 'v2-m', product_id: 'demo-rack-2', size: 'M', color: 'Washed Charcoal', stock_quantity: 15, created_at: '', updated_at: '' },
-      { id: 'v2-l', product_id: 'demo-rack-2', size: 'L', color: 'Washed Charcoal', stock_quantity: 6, created_at: '', updated_at: '' },
-      { id: 'v2-xl', product_id: 'demo-rack-2', size: 'XL', color: 'Washed Charcoal', stock_quantity: 3, created_at: '', updated_at: '' },
+      { id: 'v2-s', product_id: 'demo-rack-2', size: 'S', color: 'Pitch Black', stock_quantity: 4, created_at: '', updated_at: '' },
+      { id: 'v2-m', product_id: 'demo-rack-2', size: 'M', color: 'Pitch Black', stock_quantity: 8, created_at: '', updated_at: '' },
+      { id: 'v2-l', product_id: 'demo-rack-2', size: 'L', color: 'Pitch Black', stock_quantity: 6, created_at: '', updated_at: '' },
     ],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
   {
     id: 'demo-rack-3',
-    name: 'SIGNATURE FRENCH TERRY CREW',
-    slug: 'signature-french-terry-crew',
-    description: 'Minimalist industrial streetwear crewneck with raw finished seams.',
-    price: 1699,
-    compare_at_price: 2499,
+    name: 'BOXY FRENCH TERRY CREWNECK',
+    slug: 'boxy-french-terry-crewneck',
+    description: 'Minimalist drop-shoulder crewneck with tonal silicone chest print.',
+    price: 1599,
+    compare_at_price: 2299,
     is_active: true,
     is_featured: true,
     is_new: true,
     in_clothing_rail: true,
     rail_display_order: 3,
     details: {
-      fabric: '100% Cotton Heavyweight Fleece',
-      gsm: 260,
-      fit: 'Boxy Silhouette',
+      fabric: '100% Combed Cotton Single Jersey',
+      gsm: 240,
+      fit: 'Oversized Drop-Shoulder Fit',
     },
     images: [
       {
         id: 'img-demo-3-side',
         product_id: 'demo-rack-3',
-        image_url: '/assets/wenzy_front_texture.png',
+        image_url: 'https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071517384792.webp',
         display_order: 1,
         is_primary: false,
         view_type: 'side',
@@ -152,7 +151,7 @@ const DEMO_SHOWCASE_PIECES: Product[] = [
       {
         id: 'img-demo-3-front',
         product_id: 'demo-rack-3',
-        image_url: '/assets/wenzy_front_texture.png',
+        image_url: 'https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071517318112.webp',
         display_order: 2,
         is_primary: true,
         view_type: 'front',
@@ -161,7 +160,7 @@ const DEMO_SHOWCASE_PIECES: Product[] = [
       {
         id: 'img-demo-3-back',
         product_id: 'demo-rack-3',
-        image_url: '/assets/wenzy_back_texture.png',
+        image_url: 'https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071517292954.webp',
         display_order: 3,
         is_primary: false,
         view_type: 'back',
@@ -169,34 +168,34 @@ const DEMO_SHOWCASE_PIECES: Product[] = [
       },
     ],
     variants: [
-      { id: 'v3-m', product_id: 'demo-rack-3', size: 'M', color: 'Pitch Black', stock_quantity: 14, created_at: '', updated_at: '' },
-      { id: 'v3-l', product_id: 'demo-rack-3', size: 'L', color: 'Pitch Black', stock_quantity: 8, created_at: '', updated_at: '' },
+      { id: 'v3-m', product_id: 'demo-rack-3', size: 'M', color: 'Washed Ash', stock_quantity: 11, created_at: '', updated_at: '' },
+      { id: 'v3-l', product_id: 'demo-rack-3', size: 'L', color: 'Washed Ash', stock_quantity: 7, created_at: '', updated_at: '' },
     ],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
   {
     id: 'demo-rack-4',
-    name: 'LIMITLESS GRAPHIC LONGSLEEVE',
-    slug: 'limitless-graphic-longsleeve',
-    description: 'Sleeve typography hit with oversized back brutalist art print.',
-    price: 1499,
-    compare_at_price: 2199,
+    name: 'HEAVYWEIGHT STREETWEAR TEE',
+    slug: 'heavyweight-streetwear-tee',
+    description: 'High-density screenprint chest hit with raw industrial typography on reverse.',
+    price: 1199,
+    compare_at_price: 1799,
     is_active: true,
     is_featured: true,
     is_new: true,
     in_clothing_rail: true,
     rail_display_order: 4,
     details: {
-      fabric: '100% Combed Cotton',
-      gsm: 240,
-      fit: 'Drop Shoulder Fit',
+      fabric: '100% Combed Heavy Cotton',
+      gsm: 260,
+      fit: 'Relaxed Streetwear Silhouette',
     },
     images: [
       {
         id: 'img-demo-4-side',
         product_id: 'demo-rack-4',
-        image_url: '/assets/wenzy_front_texture.png',
+        image_url: 'https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071516549024.webp',
         display_order: 1,
         is_primary: false,
         view_type: 'side',
@@ -205,7 +204,7 @@ const DEMO_SHOWCASE_PIECES: Product[] = [
       {
         id: 'img-demo-4-front',
         product_id: 'demo-rack-4',
-        image_url: '/assets/wenzy_front_texture.png',
+        image_url: 'https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071515314737.webp',
         display_order: 2,
         is_primary: true,
         view_type: 'front',
@@ -214,7 +213,7 @@ const DEMO_SHOWCASE_PIECES: Product[] = [
       {
         id: 'img-demo-4-back',
         product_id: 'demo-rack-4',
-        image_url: '/assets/wenzy_back_texture.png',
+        image_url: 'https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071515554298.webp',
         display_order: 3,
         is_primary: false,
         view_type: 'back',
@@ -222,9 +221,9 @@ const DEMO_SHOWCASE_PIECES: Product[] = [
       },
     ],
     variants: [
-      { id: 'v4-s', product_id: 'demo-rack-4', size: 'S', color: 'Acid Grey', stock_quantity: 4, created_at: '', updated_at: '' },
-      { id: 'v4-m', product_id: 'demo-rack-4', size: 'M', color: 'Acid Grey', stock_quantity: 9, created_at: '', updated_at: '' },
-      { id: 'v4-l', product_id: 'demo-rack-4', size: 'L', color: 'Acid Grey', stock_quantity: 11, created_at: '', updated_at: '' },
+      { id: 'v4-s', product_id: 'demo-rack-4', size: 'S', color: 'Charcoal', stock_quantity: 5, created_at: '', updated_at: '' },
+      { id: 'v4-m', product_id: 'demo-rack-4', size: 'M', color: 'Charcoal', stock_quantity: 9, created_at: '', updated_at: '' },
+      { id: 'v4-l', product_id: 'demo-rack-4', size: 'L', color: 'Charcoal', stock_quantity: 12, created_at: '', updated_at: '' },
     ],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -235,12 +234,16 @@ const DEMO_SHOWCASE_PIECES: Product[] = [
  * WENZY RACK Section Component
  * Placed directly below the homepage hero banner.
  * Presents the interactive curved clothing rail with photorealistic hanging garments,
- * hover sway physics, drag momentum, and focused 3D inspection modal.
+ * hover 3D reveal, pendulum sway physics, drag momentum, and shared-element flight modal.
  */
 export default function WenzyRackSection() {
   const [liveProducts, setLiveProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Selection & FLIP Flight state
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [sourceElement, setSourceElement] = useState<HTMLElement | null>(null)
+  const [fromRect, setFromRect] = useState<DOMRect | null>(null)
   const [focusModalOpen, setFocusModalOpen] = useState(false)
 
   const loadRackData = async () => {
@@ -249,7 +252,7 @@ export default function WenzyRackSection() {
       const rackItems = await getRackProducts()
       setLiveProducts(rackItems)
     } catch (err) {
-      console.warn('WENZY RACK: Live database returned empty or pending migration, using showcase items:', err)
+      console.warn('WENZY RACK: Live database returned empty or error, using showcase items:', err)
       setLiveProducts([])
     } finally {
       setLoading(false)
@@ -264,18 +267,29 @@ export default function WenzyRackSection() {
   const isShowcaseMode = liveProducts.length === 0
   const activeProducts = isShowcaseMode ? DEMO_SHOWCASE_PIECES : liveProducts
 
-  const handleSelectProduct = (product: Product) => {
+  const handleSelectProduct = (
+    product: Product,
+    element: HTMLElement,
+    rect: DOMRect
+  ) => {
     setSelectedProduct(product)
+    setSourceElement(element)
+    setFromRect(rect)
     setFocusModalOpen(true)
   }
 
   const handleCloseModal = () => {
     setFocusModalOpen(false)
+  }
+
+  const handleCloseComplete = () => {
     setSelectedProduct(null)
+    setSourceElement(null)
+    setFromRect(null)
   }
 
   return (
-    <section className="relative w-full py-12 sm:py-16 bg-white border-b border-neutral-100 overflow-hidden">
+    <section className="relative w-full py-10 sm:py-14 bg-white border-b border-neutral-100 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Heading & Subtitle */}
         <div className="text-center mb-6">
@@ -313,24 +327,28 @@ export default function WenzyRackSection() {
           </div>
         ) : (
           /* Active Interactive Clothing Rail */
-          <div className="relative w-full pt-4">
+          <div className="relative w-full pt-2">
             {/* 1. Curved Metallic SVG Rail Rod */}
-            <RackRailRod className="mb-[-28px] z-10" />
+            <RackRailRod className="mb-[-34px] z-20" />
 
             {/* 2. Drag/Swipe Horizontal Track */}
             <RackTrack
               products={activeProducts}
               onSelectProduct={handleSelectProduct}
+              activeFocusProduct={selectedProduct}
             />
           </div>
         )}
       </div>
 
-      {/* 3. Focused Close-Up 3D Modal */}
+      {/* 3. Focused Close-Up 3D Modal (with FLIP Shared-Element Flight) */}
       <RackFocusModal
         isOpen={focusModalOpen}
         product={selectedProduct}
+        fromRect={fromRect}
+        sourceElement={sourceElement}
         onClose={handleCloseModal}
+        onCloseComplete={handleCloseComplete}
       />
     </section>
   )
