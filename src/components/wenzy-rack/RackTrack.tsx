@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react'
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Product } from '../../types/database'
 import RackHangerItem from './RackHangerItem'
@@ -28,14 +28,25 @@ interface ItemAnimationState {
   }
 }
 
+const MOBILE_PAGE_SIZE = 4
+
 /**
  * High-performance clothing rail track matching the reference Nike Shopify engine:
  * - 60 FPS rAF physics engine:
  *   1. Damped pendulum swing physics (--sr-sw)
  *   2. Exponential-decay hover turn from side to front with 3D perspective rotation
  *   3. Neighbor swing impulse and dynamic spacing expansion
- *   4. Inertial drag coasting with velocity preservation
+ *   4. Inertial drag coasting with velocity preservation (desktop > 4 pieces)
  *   5. Mobile two-tap gesture (1st tap turns front, 2nd tap opens focus modal)
+ *
+ * Specific Enhancements:
+ * - 0 Duplicates: Each product appears exactly once (1 product in DB = 1 garment).
+ * - Desktop Layout: Unchanged continuous rail (centered if <= 4 items, draggable if > 4 items).
+ * - Mobile Experience (< 768px):
+ *   - Max 4 products per page.
+ *   - If > 4 products, arranged in pages of 4 with smooth horizontal swipe and subtle indicator dots.
+ *   - Touch swiping with touch-action: pan-y (no vertical scroll interference).
+ *   - If <= 4 products, displays available products centered with no dots or placeholders.
  */
 export default function RackTrack({
   products,
@@ -46,11 +57,42 @@ export default function RackTrack({
   const trackRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<(HTMLDivElement | null)[]>([])
 
-  // Multiple items looping duplicate (minimum 8 pieces on rail for realistic boutique feel)
-  const loopMultiplier = products.length === 1 ? 8 : products.length < 4 ? 4 : 2
-  const displayProducts = Array(loopMultiplier).fill(products).flat()
+  // Responsive mobile detection
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    return typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  })
 
-  // Track drag state
+  // Mobile pagination state
+  const [mobilePage, setMobilePage] = useState(0)
+
+  // Chunk products for mobile pages (max 4 per page)
+  const mobilePages = useMemo(() => {
+    const pages: Product[][] = []
+    for (let i = 0; i < products.length; i += MOBILE_PAGE_SIZE) {
+      pages.push(products.slice(i, i + MOBILE_PAGE_SIZE))
+    }
+    return pages
+  }, [products])
+
+  const totalMobilePages = Math.max(1, mobilePages.length)
+
+  // Keep mobile page in bounds if product list changes
+  useEffect(() => {
+    if (mobilePage >= totalMobilePages) {
+      setMobilePage(Math.max(0, totalMobilePages - 1))
+    }
+  }, [totalMobilePages, mobilePage])
+
+  // Track viewport resize for mobile vs desktop mode
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Desktop drag state
   const isDragging = useRef(false)
   const startX = useRef(0)
   const currentTranslate = useRef(0)
@@ -58,6 +100,12 @@ export default function RackTrack({
   const velocity = useRef(0)
   const hasMoved = useRef(false)
   const dragRaf = useRef<number | null>(null)
+
+  // Mobile touch swipe state
+  const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
+  const touchDeltaX = useRef(0)
+  const isHorizontalSwipe = useRef<boolean | null>(null)
 
   // Internal animation state array for every item on rail
   const itemStates = useRef<ItemAnimationState[]>([])
@@ -84,30 +132,20 @@ export default function RackTrack({
     }
   }, [])
 
-  // Position track horizontally
+  // Position desktop track horizontally
   const setTrackPosition = useCallback((x: number) => {
-    if (!trackRef.current || !containerRef.current) return
+    if (!trackRef.current || !containerRef.current || products.length <= 4) return
     const containerWidth = containerRef.current.clientWidth
     const trackWidth = trackRef.current.scrollWidth
-    const singleSetWidth = trackWidth / loopMultiplier
 
-    let wrappedX = x
-    if (loopMultiplier > 1 && singleSetWidth > 0) {
-      if (wrappedX > 0) {
-        wrappedX -= singleSetWidth
-      } else if (wrappedX < -singleSetWidth * (loopMultiplier - 1)) {
-        wrappedX += singleSetWidth
-      }
-    } else {
-      const minBound = -(trackWidth - containerWidth)
-      wrappedX = Math.min(0, Math.max(minBound, wrappedX))
-    }
+    const minBound = Math.min(0, -(trackWidth - containerWidth))
+    const clampedX = Math.min(0, Math.max(minBound, x))
 
-    currentTranslate.current = wrappedX
-    trackRef.current.style.transform = `translateX(${wrappedX}px)`
-  }, [loopMultiplier])
+    currentTranslate.current = clampedX
+    trackRef.current.style.transform = `translateX(${clampedX}px)`
+  }, [products.length])
 
-  // Drag coasting momentum loop
+  // Drag coasting momentum loop (desktop)
   const coast = useCallback(() => {
     if (Math.abs(velocity.current) > 0.2) {
       currentTranslate.current += velocity.current
@@ -120,7 +158,7 @@ export default function RackTrack({
     }
   }, [setTrackPosition])
 
-  // Pan left / right by distance
+  // Pan left / right by distance (desktop arrow buttons)
   const panBy = (distance: number) => {
     if (dragRaf.current) cancelAnimationFrame(dragRaf.current)
     const target = currentTranslate.current + distance
@@ -302,21 +340,23 @@ export default function RackTrack({
     initItems()
     window.addEventListener('resize', initItems)
     return () => window.removeEventListener('resize', initItems)
-  }, [initItems, displayProducts.length])
+  }, [initItems, products.length, isMobile, mobilePage])
 
-  // Center track initially
+  // Reset desktop track position when <= 4 items
   useEffect(() => {
-    if (containerRef.current && trackRef.current && loopMultiplier > 1) {
-      const singleSetWidth = trackRef.current.scrollWidth / loopMultiplier
-      setTrackPosition(-singleSetWidth * 0.5)
+    if (products.length <= 4 && trackRef.current) {
+      trackRef.current.style.transform = 'none'
+      currentTranslate.current = 0
     }
-  }, [loopMultiplier, setTrackPosition])
+  }, [products.length])
 
   // -------------------------------------------------------------
-  // Pointer Drag & Hover Event Handlers
+  // Desktop Drag Handlers (> 4 items)
   // -------------------------------------------------------------
   const handlePointerDown = (e: React.PointerEvent) => {
     lastPointerType.current = e.pointerType || 'mouse'
+    if (products.length <= 4) return
+
     isDragging.current = true
     hasMoved.current = false
     startX.current = e.clientX
@@ -327,7 +367,7 @@ export default function RackTrack({
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging.current) return
+    if (!isDragging.current || products.length <= 4) return
 
     const currentX = e.clientX
     const deltaX = currentX - lastX.current
@@ -355,6 +395,46 @@ export default function RackTrack({
     dragRaf.current = requestAnimationFrame(coast)
   }
 
+  // -------------------------------------------------------------
+  // Mobile Touch Swipe Handlers (Pages of max 4)
+  // -------------------------------------------------------------
+  const handleMobileTouchStart = (e: React.TouchEvent) => {
+    lastPointerType.current = 'touch'
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+    touchDeltaX.current = 0
+    isHorizontalSwipe.current = null
+  }
+
+  const handleMobileTouchMove = (e: React.TouchEvent) => {
+    const currentX = e.touches[0].clientX
+    const currentY = e.touches[0].clientY
+    const dx = currentX - touchStartX.current
+    const dy = currentY - touchStartY.current
+
+    // Direction lock on first significant displacement
+    if (isHorizontalSwipe.current === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+      isHorizontalSwipe.current = Math.abs(dx) > Math.abs(dy)
+    }
+
+    // If user is scrolling vertically down page, do not interfere!
+    if (isHorizontalSwipe.current === false) return
+
+    touchDeltaX.current = dx
+  }
+
+  const handleMobileTouchEnd = () => {
+    if (isHorizontalSwipe.current === true && Math.abs(touchDeltaX.current) > 36) {
+      if (touchDeltaX.current < 0 && mobilePage < totalMobilePages - 1) {
+        setMobilePage((p) => p + 1)
+      } else if (touchDeltaX.current > 0 && mobilePage > 0) {
+        setMobilePage((p) => p - 1)
+      }
+    }
+    isHorizontalSwipe.current = null
+    touchDeltaX.current = 0
+  }
+
   // Handle click / tap on garment
   const handleItemClick = (
     e: React.MouseEvent<HTMLDivElement>,
@@ -371,7 +451,6 @@ export default function RackTrack({
     // 1st tap turns piece to front face. 2nd tap opens modal.
     if (lastPointerType.current === 'touch') {
       if (tappedIdx.current !== idx) {
-        // First tap: turn this item to front, turn any previous back
         if (tappedIdx.current !== null && itemStates.current[tappedIdx.current]) {
           itemStates.current[tappedIdx.current].t = 0
         }
@@ -381,7 +460,6 @@ export default function RackTrack({
         impulse(idx + 1, 26)
         return
       }
-      // Second tap: open modal
       tappedIdx.current = null
     }
 
@@ -401,65 +479,166 @@ export default function RackTrack({
     setHover(null)
   }
 
+  if (products.length === 0) return null
+
   return (
     <div
       className="relative w-full overflow-hidden select-none group"
       onClick={handleBackgroundClick}
     >
-      {/* Pan Navigation Buttons (Desktop only - pointer-events-none when opacity-0) */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          panBy(360)
-        }}
-        className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-40 w-11 h-11 items-center justify-center bg-black/85 hover:bg-black text-white rounded-full shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity backdrop-blur-md border border-white/10"
-        title="Scroll left"
-      >
-        <ChevronLeft className="w-5 h-5" />
-      </button>
-
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          panBy(-360)
-        }}
-        className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-40 w-11 h-11 items-center justify-center bg-black/85 hover:bg-black text-white rounded-full shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity backdrop-blur-md border border-white/10"
-        title="Scroll right"
-      >
-        <ChevronRight className="w-5 h-5" />
-      </button>
-
-      {/* Main Draggable Horizontal Container */}
-      <div
-        ref={containerRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        className="w-full overflow-hidden cursor-grab active:cursor-grabbing touch-pan-y pt-2 pb-6"
-      >
-        <div
-          ref={trackRef}
-          className="flex items-start gap-4 sm:gap-6 md:gap-8 px-8 sm:px-16 w-max will-change-transform"
-        >
-          {displayProducts.map((product, idx) => (
-            <div key={`${product.id}-${idx}`} className="shrink-0">
-              <RackHangerItem
-                ref={(el) => {
-                  itemRefs.current[idx] = el
+      {!isMobile ? (
+        /* ------------------------------------------------------------- */
+        /* DESKTOP VIEW (>= 768px): Unchanged continuous rail experience */
+        /* ------------------------------------------------------------- */
+        <div className="w-full">
+          {/* Pan Navigation Buttons (Desktop only - shown when > 4 products) */}
+          {products.length > 4 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  panBy(360)
                 }}
-                product={product}
-                index={idx}
-                onClick={(e) => handleItemClick(e, product, idx)}
-                onMouseEnter={() => setHover(idx)}
-                onMouseLeave={() => setHover(null)}
-              />
+                className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-40 w-11 h-11 items-center justify-center bg-black/85 hover:bg-black text-white rounded-full shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity backdrop-blur-md border border-white/10"
+                title="Scroll left"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  panBy(-360)
+                }}
+                className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-40 w-11 h-11 items-center justify-center bg-black/85 hover:bg-black text-white rounded-full shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity backdrop-blur-md border border-white/10"
+                title="Scroll right"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </>
+          )}
+
+          {/* Main Draggable Horizontal Container */}
+          <div
+            ref={containerRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            className={`w-full overflow-hidden touch-pan-y pt-2 pb-6 ${
+              products.length > 4
+                ? 'cursor-grab active:cursor-grabbing'
+                : 'flex justify-center'
+            }`}
+          >
+            <div
+              ref={trackRef}
+              className={`flex items-start gap-4 sm:gap-6 md:gap-8 px-8 sm:px-16 will-change-transform ${
+                products.length <= 4 ? 'w-full justify-center' : 'w-max'
+              }`}
+            >
+              {products.map((product, idx) => (
+                <div key={product.id} className="shrink-0">
+                  <RackHangerItem
+                    ref={(el) => {
+                      itemRefs.current[idx] = el
+                    }}
+                    product={product}
+                    index={idx}
+                    onClick={(e) => handleItemClick(e, product, idx)}
+                    onMouseEnter={() => setHover(idx)}
+                    onMouseLeave={() => setHover(null)}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        /* ------------------------------------------------------------- */
+        /* MOBILE VIEW (< 768px): Max 4 Items Per Page with Swipe Glides */
+        /* ------------------------------------------------------------- */
+        <div
+          className="w-full overflow-hidden touch-pan-y pt-2 pb-5"
+          onTouchStart={handleMobileTouchStart}
+          onTouchMove={handleMobileTouchMove}
+          onTouchEnd={handleMobileTouchEnd}
+        >
+          {totalMobilePages <= 1 ? (
+            /* Single Page (<= 4 items): Clean centered rail, no extra placeholders */
+            <div className="flex items-start justify-center gap-3 sm:gap-4 px-3 w-full">
+              {products.map((product, idx) => (
+                <div key={product.id} className="shrink-0">
+                  <RackHangerItem
+                    ref={(el) => {
+                      itemRefs.current[idx] = el
+                    }}
+                    product={product}
+                    index={idx}
+                    onClick={(e) => handleItemClick(e, product, idx)}
+                    onMouseEnter={() => setHover(idx)}
+                    onMouseLeave={() => setHover(null)}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* Multi-Page Carousel (> 4 items): Horizontal glide per page of 4 */
+            <>
+              <div
+                className="flex w-full transition-transform duration-400 ease-out will-change-transform"
+                style={{
+                  transform: `translateX(-${mobilePage * 100}%)`,
+                }}
+              >
+                {mobilePages.map((pageItems, pageIdx) => (
+                  <div
+                    key={`mob-page-${pageIdx}`}
+                    className="w-full shrink-0 flex items-start justify-center gap-3 sm:gap-4 px-2"
+                  >
+                    {pageItems.map((product, pItemIdx) => {
+                      const globalIdx = pageIdx * MOBILE_PAGE_SIZE + pItemIdx
+                      return (
+                        <div key={product.id} className="shrink-0">
+                          <RackHangerItem
+                            ref={(el) => {
+                              itemRefs.current[globalIdx] = el
+                            }}
+                            product={product}
+                            index={globalIdx}
+                            onClick={(e) => handleItemClick(e, product, globalIdx)}
+                            onMouseEnter={() => setHover(globalIdx)}
+                            onMouseLeave={() => setHover(null)}
+                          />
+                        </div>
+                      )
+                    })}
+                  </div>
+                ))}
+              </div>
+
+              {/* Mobile Pagination Indicator Dots */}
+              <div className="flex items-center justify-center gap-2 mt-4">
+                {mobilePages.map((_, pIdx) => (
+                  <button
+                    key={pIdx}
+                    type="button"
+                    onClick={() => setMobilePage(pIdx)}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      pIdx === mobilePage
+                        ? 'w-6 bg-neutral-900'
+                        : 'w-1.5 bg-neutral-300 hover:bg-neutral-500'
+                    }`}
+                    aria-label={`Go to page ${pIdx + 1} of ${totalMobilePages}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
