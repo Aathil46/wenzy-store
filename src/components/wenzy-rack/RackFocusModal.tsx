@@ -280,11 +280,25 @@ export default function RackFocusModal({
     }, 1500)
   }
 
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement
+    // Do not close if clicking inside the garment itself, controls, or close button
+    if (
+      target.closest('.rack-focus-interactive') ||
+      target.closest('.rack-garment') ||
+      target.closest('.rack-focus-close')
+    ) {
+      return
+    }
+    handleRequestClose()
+  }
+
   return createPortal(
     <div
       className={`rack-focus sr-focus-open ${
         isAnimatingIn && !isClosing ? 'sr-focus-in' : ''
       }`}
+      onClick={handleBackdropClick}
     >
       {/* 1. Frosted Backdrop Blur (26px) */}
       <div className="rack-focus-bg" onClick={handleRequestClose} />
@@ -357,7 +371,7 @@ export default function RackFocusModal({
           </div>
 
           {/* Angle Switching Tabs ([ FRONT ] / [ BACK ]) */}
-          <div className="rack-focus-meta mt-6 flex items-center gap-2 bg-neutral-900/90 border border-neutral-800 p-1 rounded-full shadow-2xl backdrop-blur-md">
+          <div className="rack-focus-meta rack-focus-interactive mt-6 flex items-center gap-2 bg-neutral-900/90 border border-neutral-800 p-1 rounded-full shadow-2xl backdrop-blur-md">
             <button
               type="button"
               onClick={() => setRotationTarget(0)}
@@ -387,7 +401,7 @@ export default function RackFocusModal({
         </div>
 
         {/* RIGHT: Product Meta & Direct Shopping HUD */}
-        <div className="rack-focus-meta w-full md:w-1/2 max-w-md bg-neutral-950/85 border border-neutral-800/80 p-6 sm:p-8 rounded-sm shadow-2xl backdrop-blur-xl text-white space-y-6">
+        <div className="rack-focus-meta rack-focus-interactive w-full md:w-1/2 max-w-md bg-neutral-950/85 border border-neutral-800/80 p-6 sm:p-8 rounded-sm shadow-2xl backdrop-blur-xl text-white space-y-6">
           <div className="space-y-3">
             {/* Category & Collection Tag */}
             <div className="flex items-center gap-2">

@@ -89,6 +89,16 @@
   margin-right: 18px !important;
 }
 
+:root {
+  --rack-h: 440px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --rack-h: 225px;
+  }
+}
+
 .rack-garment {
   position: relative;
   width: 100%;

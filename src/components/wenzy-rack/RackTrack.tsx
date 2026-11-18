@@ -309,7 +309,8 @@ export default function RackTrack({
       }
 
       const garment = el.querySelector<HTMLElement>('.rack-garment') || el
-      const hpx = garment.getBoundingClientRect().height || 440
+      const hpx =
+        garment.getBoundingClientRect().height || (window.innerWidth < 768 ? 225 : 440)
 
       const views = Array.from(el.querySelectorAll<HTMLElement>('.rack-view')).map((v) => ({
         el: v,
@@ -458,21 +459,8 @@ export default function RackTrack({
     const s = itemStates.current[idx]
     if (!s || !s.element) return
 
-    // Mobile / Touch two-tap handling:
-    // 1st tap turns piece to front face. 2nd tap opens modal.
-    if (lastPointerType.current === 'touch') {
-      if (tappedIdx.current !== idx) {
-        if (tappedIdx.current !== null && itemStates.current[tappedIdx.current]) {
-          itemStates.current[tappedIdx.current].t = 0
-        }
-        tappedIdx.current = idx
-        s.t = 1
-        impulse(idx - 1, -5)
-        impulse(idx + 1, 5)
-        return
-      }
-      tappedIdx.current = null
-    }
+    // Reset any tapped state
+    tappedIdx.current = null
 
     // Capture source garment rect for true FLIP flight animation
     const garment = s.garment || s.element
@@ -578,8 +566,8 @@ export default function RackTrack({
           onTouchEnd={handleMobileTouchEnd}
         >
           {totalMobilePages <= 1 ? (
-            /* Single Page (<= 4 items): Clean centered rail, no extra placeholders */
-            <div className="flex items-start justify-center gap-3 sm:gap-4 px-3 w-full">
+            /* Single Page (<= 4 items): Clean centered rail, comfortable 4-item fit */
+            <div className="flex items-start justify-center gap-2 sm:gap-3 px-2 w-full">
               {products.map((product, idx) => (
                 <div key={product.id} className="shrink-0">
                   <RackHangerItem
@@ -607,7 +595,7 @@ export default function RackTrack({
                 {mobilePages.map((pageItems, pageIdx) => (
                   <div
                     key={`mob-page-${pageIdx}`}
-                    className="w-full shrink-0 flex items-start justify-center gap-3 sm:gap-4 px-2"
+                    className="w-full shrink-0 flex items-start justify-center gap-2 sm:gap-3 px-2"
                   >
                     {pageItems.map((product, pItemIdx) => {
                       const globalIdx = pageIdx * MOBILE_PAGE_SIZE + pItemIdx

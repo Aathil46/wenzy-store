@@ -14,6 +14,7 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   Sparkles,
+  Copy,
 } from 'lucide-react'
 import {
   adminGetProducts,
@@ -372,6 +373,8 @@ export default function AdminProducts() {
     }
   }
 
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
+
   const handleDelete = async (prod: Product) => {
     if (!confirm(`Are you sure you want to delete product "${prod.name}"? This action is permanent.`)) {
       return
@@ -382,6 +385,72 @@ export default function AdminProducts() {
       await loadData()
     } catch (err: any) {
       alert(`Delete failed: ${err.message}`)
+    }
+  }
+
+  const handleDuplicate = async (prod: Product) => {
+    try {
+      setDuplicatingId(prod.id)
+
+      // 1. Generate unique slug and name
+      const randSuffix = Math.random().toString(36).substring(2, 6)
+      const baseSlug = prod.slug.replace(/-copy(-\w+)?$/, '')
+      const newSlug = `${baseSlug}-copy-${randSuffix}`
+      const newName = `${prod.name} (Copy)`
+
+      // 2. Prepare product data copy (omitting id so a new record is created)
+      const newProductData: Partial<Product> = {
+        name: newName,
+        slug: newSlug,
+        description: prod.description,
+        price: prod.price,
+        compare_at_price: prod.compare_at_price || null,
+        category_id: prod.category_id || null,
+        is_active: prod.is_active,
+        is_featured: prod.is_featured,
+        is_new: true,
+        in_clothing_rail: prod.in_clothing_rail ?? false,
+        rail_display_order: (prod.rail_display_order ?? 0) + 1,
+        details: prod.details ? { ...prod.details } : {},
+      }
+
+      // 3. Prepare images copy (copies standard images AND dedicated rack side/front/back/detail cutouts)
+      const imagesToCopy = (prod.images || []).map((img) => ({
+        image_url: img.image_url,
+        alt_text: `${newName} – ${img.view_type || 'image'}`,
+        is_primary: img.is_primary,
+        view_type: (img.view_type as any) || 'standard',
+      }))
+
+      // 4. Prepare variants copy with unique SKU per size variant
+      const variantsToCopy = (prod.variants || []).map((v) => ({
+        size: v.size,
+        color: v.color || 'Black',
+        sku: `${newSlug.substring(0, 8).toUpperCase()}-${v.size}-${randSuffix.toUpperCase()}`,
+        stock_quantity: v.stock_quantity ?? 10,
+      }))
+
+      const finalVariants =
+        variantsToCopy.length > 0
+          ? variantsToCopy
+          : DEFAULT_SIZES.map((s) => ({
+              size: s,
+              color: 'Black',
+              sku: `${newSlug.substring(0, 8).toUpperCase()}-${s}-${randSuffix.toUpperCase()}`,
+              stock_quantity: 10,
+            }))
+
+      // 5. Save as separate product in database
+      await adminSaveProduct(newProductData, imagesToCopy, finalVariants)
+
+      // 6. Reload products list
+      await loadData()
+      if (modalOpen) setModalOpen(false)
+    } catch (err: any) {
+      console.error('Failed to duplicate product:', err)
+      alert(`Duplication failed: ${err.message || 'Unknown error'}`)
+    } finally {
+      setDuplicatingId(null)
     }
   }
 
@@ -641,6 +710,18 @@ export default function AdminProducts() {
                           title="Edit Product"
                         >
                           <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDuplicate(p)}
+                          disabled={duplicatingId === p.id}
+                          className="p-1.5 text-neutral-600 hover:text-black transition-colors disabled:opacity-50"
+                          title="Duplicate Product (creates independent copy)"
+                        >
+                          {duplicatingId === p.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-black" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
                         </button>
                         <button
                           onClick={() => handleDelete(p)}
@@ -1174,17 +1255,37 @@ export default function AdminProducts() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="pt-6 border-t border-neutral-200 flex items-center justify-end gap-3">
-                  <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">
-                    Cancel
-                  </button>
-                  <button type="submit" disabled={saving} className="btn-primary min-w-36 flex items-center justify-center gap-2">
-                    {saving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <span>{editingProduct ? 'Save Changes' : 'Create Piece'}</span>
+                <div className="pt-6 border-t border-neutral-200 flex items-center justify-between gap-3">
+                  <div>
+                    {editingProduct && (
+                      <button
+                        type="button"
+                        disabled={saving || duplicatingId === editingProduct.id}
+                        onClick={() => handleDuplicate(editingProduct)}
+                        className="btn-secondary flex items-center gap-1.5 text-xs text-neutral-700 hover:text-black border-neutral-300"
+                        title="Create an independent duplicate copy of this piece"
+                      >
+                        {duplicatingId === editingProduct.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                        <span>Duplicate Piece</span>
+                      </button>
                     )}
-                  </button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">
+                      Cancel
+                    </button>
+                    <button type="submit" disabled={saving} className="btn-primary min-w-36 flex items-center justify-center gap-2">
+                      {saving ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <span>{editingProduct ? 'Save Changes' : 'Create Piece'}</span>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
