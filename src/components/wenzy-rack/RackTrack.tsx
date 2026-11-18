@@ -28,7 +28,8 @@ interface ItemAnimationState {
   }
 }
 
-const MOBILE_PAGE_SIZE = 4
+const SET_COUNT = 5 // 5 repeat sets for infinite seamless looping (2 before, 1 center, 2 after)
+const START_PAD = 14 // 14px comfortable gutter at resting center
 
 /**
  * High-performance clothing rail track matching the reference Nike Shopify engine:
@@ -36,17 +37,20 @@ const MOBILE_PAGE_SIZE = 4
  *   1. Damped pendulum swing physics (--sr-sw)
  *   2. Exponential-decay hover turn from side to front with 3D perspective rotation
  *   3. Neighbor swing impulse and dynamic spacing expansion
- *   4. Inertial drag coasting with velocity preservation (desktop > 4 pieces)
- *   5. Mobile two-tap gesture (1st tap turns front, 2nd tap opens focus modal)
+ *   4. Inertial drag coasting with velocity preservation
  *
- * Specific Enhancements:
- * - 0 Duplicates: Each product appears exactly once (1 product in DB = 1 garment).
- * - Desktop Layout: Unchanged continuous rail (centered if <= 4 items, draggable if > 4 items).
- * - Mobile Experience (< 768px):
- *   - Max 4 products per page.
- *   - If > 4 products, arranged in pages of 4 with smooth horizontal swipe and subtle indicator dots.
- *   - Touch swiping with touch-action: pan-y (no vertical scroll interference).
- *   - If <= 4 products, displays available products centered with no dots or placeholders.
+ * Responsive Architecture:
+ * - DESKTOP (>= 768px):
+ *   - Unchanged continuous rail (centered if <= 4 items, draggable if > 4 items)
+ *   - Arrow buttons for panning
+ *   - Desktop mouse hover 3D reveal
+ * - MOBILE (< 768px):
+ *   - True infinite horizontal loop (items continue endlessly in both directions, 0 seams)
+ *   - Direct finger-following 1:1 touch/pointer drag
+ *   - Continuous partial entry of subsequent garments (comfortable 4-item resting fit)
+ *   - Smooth release with exponential momentum deceleration
+ *   - Two-tap interaction (1st tap turns front on rail, 2nd tap opens product detail)
+ *   - Tap outside returns turned piece to side profile
  */
 export default function RackTrack({
   products,
@@ -55,33 +59,13 @@ export default function RackTrack({
 }: RackTrackProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
+  const mobileTrackRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<(HTMLDivElement | null)[]>([])
 
   // Responsive mobile detection
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     return typeof window !== 'undefined' ? window.innerWidth < 768 : false
   })
-
-  // Mobile pagination state
-  const [mobilePage, setMobilePage] = useState(0)
-
-  // Chunk products for mobile pages (max 4 per page)
-  const mobilePages = useMemo(() => {
-    const pages: Product[][] = []
-    for (let i = 0; i < products.length; i += MOBILE_PAGE_SIZE) {
-      pages.push(products.slice(i, i + MOBILE_PAGE_SIZE))
-    }
-    return pages
-  }, [products])
-
-  const totalMobilePages = Math.max(1, mobilePages.length)
-
-  // Keep mobile page in bounds if product list changes
-  useEffect(() => {
-    if (mobilePage >= totalMobilePages) {
-      setMobilePage(Math.max(0, totalMobilePages - 1))
-    }
-  }, [totalMobilePages, mobilePage])
 
   // Track viewport resize for mobile vs desktop mode
   useEffect(() => {
@@ -92,7 +76,52 @@ export default function RackTrack({
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Desktop drag state
+  // -------------------------------------------------------------
+  // Mobile Infinite Loop State & Data
+  // -------------------------------------------------------------
+  // Ensure base cycle has at least 6 products so 1 set is comfortably wider than any viewport
+  const baseCycleProducts = useMemo(() => {
+    if (products.length === 0) return []
+    let list: Product[] = []
+    while (list.length < 6) {
+      list = list.concat(products)
+    }
+    return list
+  }, [products])
+
+  // Create 5 identical repeat sets for seamless infinite loop buffer
+  const mobileItems = useMemo(() => {
+    if (baseCycleProducts.length === 0) return []
+    const items: Product[] = []
+    for (let s = 0; s < SET_COUNT; s++) {
+      items.push(...baseCycleProducts)
+    }
+    return items
+  }, [baseCycleProducts])
+
+  const cycleLen = baseCycleProducts.length
+  const cycleWidthRef = useRef<number>(0)
+  const mobileTrackTranslate = useRef<number>(0)
+  const hasInitializedMobilePos = useRef<boolean>(false)
+
+  // Mobile touch / pointer drag state
+  const isMobileDragging = useRef(false)
+  const hasMobileMoved = useRef(false)
+  const mobileStartX = useRef(0)
+  const mobileStartY = useRef(0)
+  const mobileLastX = useRef(0)
+  const mobileLastTime = useRef(0)
+  const mobileVelocity = useRef(0)
+  const mobileMomentumRaf = useRef<number | null>(null)
+  const isHorizontalGesture = useRef<boolean | null>(null)
+  const touchActiveRef = useRef(false)
+
+  // Track currently turned product id on mobile
+  const tappedProdId = useRef<string | null>(null)
+
+  // -------------------------------------------------------------
+  // Desktop Drag State (> 4 items)
+  // -------------------------------------------------------------
   const isDragging = useRef(false)
   const startX = useRef(0)
   const currentTranslate = useRef(0)
@@ -101,16 +130,9 @@ export default function RackTrack({
   const hasMoved = useRef(false)
   const dragRaf = useRef<number | null>(null)
 
-  // Mobile touch swipe state
-  const touchStartX = useRef(0)
-  const touchStartY = useRef(0)
-  const touchDeltaX = useRef(0)
-  const isHorizontalSwipe = useRef<boolean | null>(null)
-
   // Internal animation state array for every item on rail
   const itemStates = useRef<ItemAnimationState[]>([])
   const curHoverIdx = useRef<number | null>(null)
-  const tappedIdx = useRef<number | null>(null)
   const lastPointerType = useRef<string>('mouse')
 
   // Animation constants matching natural damped physics
@@ -132,20 +154,38 @@ export default function RackTrack({
     }
   }, [])
 
-  // Position desktop track horizontally
-  const setTrackPosition = useCallback((x: number) => {
-    if (!trackRef.current || !containerRef.current || products.length <= 4) return
-    const containerWidth = containerRef.current.clientWidth
-    const trackWidth = trackRef.current.scrollWidth
+  // Brushing impulse across visible mobile garments while dragging / gliding
+  const applyBrushingSwing = useCallback(
+    (v: number) => {
+      if (Math.abs(v) < 0.2 || itemStates.current.length === 0) return
+      const centerIdx = Math.floor(itemStates.current.length / 2)
+      for (let i = centerIdx - 4; i <= centerIdx + 4; i++) {
+        if (itemStates.current[i]?.swing) {
+          itemStates.current[i].swing.v += v * (0.2 + (Math.abs(i) % 3) * 0.05)
+        }
+      }
+    },
+    []
+  )
 
-    const minBound = Math.min(0, -(trackWidth - containerWidth))
-    const clampedX = Math.min(0, Math.max(minBound, x))
+  // -------------------------------------------------------------
+  // Desktop Drag Handlers & Helpers
+  // -------------------------------------------------------------
+  const setTrackPosition = useCallback(
+    (x: number) => {
+      if (!trackRef.current || !containerRef.current || products.length <= 4) return
+      const containerWidth = containerRef.current.clientWidth
+      const trackWidth = trackRef.current.scrollWidth
 
-    currentTranslate.current = clampedX
-    trackRef.current.style.transform = `translateX(${clampedX}px)`
-  }, [products.length])
+      const minBound = Math.min(0, -(trackWidth - containerWidth))
+      const clampedX = Math.min(0, Math.max(minBound, x))
 
-  // Drag coasting momentum loop (desktop)
+      currentTranslate.current = clampedX
+      trackRef.current.style.transform = `translateX(${clampedX}px)`
+    },
+    [products.length]
+  )
+
   const coast = useCallback(() => {
     if (Math.abs(velocity.current) > 0.2) {
       currentTranslate.current += velocity.current
@@ -158,14 +198,12 @@ export default function RackTrack({
     }
   }, [setTrackPosition])
 
-  // Pan left / right by distance (desktop arrow buttons)
   const panBy = (distance: number) => {
     if (dragRaf.current) cancelAnimationFrame(dragRaf.current)
     const target = currentTranslate.current + distance
     setTrackPosition(target)
   }
 
-  // Set hover state on garment
   const setHover = useCallback(
     (idx: number | null) => {
       if (lastPointerType.current === 'touch') return
@@ -174,7 +212,6 @@ export default function RackTrack({
       const prev = curHoverIdx.current
       if (prev !== null && itemStates.current[prev]) {
         itemStates.current[prev].t = 0
-        // Gentle return impulse to former neighbors
         impulse(prev - 1, 2.5)
         impulse(prev + 1, -2.5)
       }
@@ -182,16 +219,253 @@ export default function RackTrack({
       curHoverIdx.current = idx
       if (idx !== null && itemStates.current[idx]) {
         itemStates.current[idx].t = 1
-        // Smoothly stabilize hovered item itself so it turns with 0 shaking
         itemStates.current[idx].swing.a = 0
         itemStates.current[idx].swing.v = 0
-        // Gentle subtle nudge to immediate neighbors
         impulse(idx - 1, -5)
         impulse(idx + 1, 5)
       }
     },
     [impulse]
   )
+
+  // -------------------------------------------------------------
+  // Mobile Infinite Seamless Looping Engine
+  // -------------------------------------------------------------
+  const wrapTranslate = useCallback((x: number, cWidth: number) => {
+    if (cWidth <= 0) return x
+    let wrapped = x
+    const lowerBound = -3 * cWidth + START_PAD
+    const upperBound = -cWidth + START_PAD
+    while (wrapped < lowerBound) {
+      wrapped += cWidth
+    }
+    while (wrapped > upperBound) {
+      wrapped -= cWidth
+    }
+    return wrapped
+  }, [])
+
+  const applyMobileTranslate = useCallback((x: number) => {
+    if (!mobileTrackRef.current) return
+    mobileTrackRef.current.style.transform = `translateX(${x}px)`
+  }, [])
+
+  // Natural momentum release glide with exponential deceleration matching Nike reference
+  const startMobileGlide = useCallback(
+    (initialV: number) => {
+      if (mobileMomentumRaf.current) cancelAnimationFrame(mobileMomentumRaf.current)
+      let v = initialV
+      let lastTime = performance.now()
+
+      const step = (ts: number) => {
+        const dt = Math.min(40, ts - lastTime)
+        lastTime = ts
+
+        const nextX = mobileTrackTranslate.current + v * dt
+        const wrappedX = wrapTranslate(nextX, cycleWidthRef.current)
+        mobileTrackTranslate.current = wrappedX
+        applyMobileTranslate(wrappedX)
+
+        // Exponential decay: v *= 0.94^(dt/16)
+        v *= Math.pow(0.94, dt / 16)
+
+        if (Math.abs(v) > 0.08) {
+          applyBrushingSwing(clamp(v * 2.5, -2, 2))
+        }
+
+        if (Math.abs(v) > 0.02) {
+          mobileMomentumRaf.current = requestAnimationFrame(step)
+        } else {
+          mobileVelocity.current = 0
+          mobileMomentumRaf.current = null
+        }
+      }
+
+      mobileMomentumRaf.current = requestAnimationFrame(step)
+    },
+    [wrapTranslate, applyMobileTranslate, applyBrushingSwing]
+  )
+
+  // Mobile Touch Handlers
+  const handleMobileTouchStart = (e: React.TouchEvent) => {
+    touchActiveRef.current = true
+    lastPointerType.current = 'touch'
+
+    if (mobileMomentumRaf.current) {
+      cancelAnimationFrame(mobileMomentumRaf.current)
+      mobileMomentumRaf.current = null
+    }
+
+    isMobileDragging.current = true
+    hasMobileMoved.current = false
+    isHorizontalGesture.current = null
+
+    const touch = e.touches[0]
+    mobileStartX.current = touch.clientX
+    mobileStartY.current = touch.clientY
+    mobileLastX.current = touch.clientX
+    mobileLastTime.current = performance.now()
+    mobileVelocity.current = 0
+  }
+
+  const handleMobileTouchMove = (e: React.TouchEvent) => {
+    if (!isMobileDragging.current || e.touches.length !== 1) return
+
+    const touch = e.touches[0]
+    const currentX = touch.clientX
+    const currentY = touch.clientY
+    const totalDx = currentX - mobileStartX.current
+    const totalDy = currentY - mobileStartY.current
+    const dx = currentX - mobileLastX.current
+
+    // Direction lock: wait for 5px movement
+    if (isHorizontalGesture.current === null && (Math.abs(totalDx) > 5 || Math.abs(totalDy) > 5)) {
+      isHorizontalGesture.current = Math.abs(totalDx) >= Math.abs(totalDy)
+    }
+
+    if (isHorizontalGesture.current === false) return
+
+    if (e.cancelable) {
+      e.preventDefault()
+    }
+
+    if (Math.abs(totalDx) > 7) {
+      hasMobileMoved.current = true
+      // Return any turned piece back to side profile on rack during swipe
+      if (tappedProdId.current !== null) {
+        setTappedProduct(null)
+      }
+    }
+
+    const now = performance.now()
+    const dt = Math.max(1, now - mobileLastTime.current)
+    const instantV = dx / dt
+    mobileVelocity.current = mobileVelocity.current * 0.4 + instantV * 0.6
+    mobileLastX.current = currentX
+    mobileLastTime.current = now
+
+    // Direct 1:1 finger tracking
+    const nextX = mobileTrackTranslate.current + dx
+    const wrappedX = wrapTranslate(nextX, cycleWidthRef.current)
+    mobileTrackTranslate.current = wrappedX
+    applyMobileTranslate(wrappedX)
+
+    if (Math.abs(dx) > 3) {
+      applyBrushingSwing(clamp(dx * 0.12, -2.5, 2.5))
+    }
+  }
+
+  const handleMobileTouchEnd = () => {
+    if (!isMobileDragging.current) return
+    isMobileDragging.current = false
+
+    const timeSinceLast = performance.now() - mobileLastTime.current
+    if (hasMobileMoved.current && timeSinceLast < 120 && Math.abs(mobileVelocity.current) > 0.05) {
+      const v = clamp(mobileVelocity.current, -2.5, 2.5)
+      startMobileGlide(v)
+    } else {
+      mobileVelocity.current = 0
+    }
+
+    setTimeout(() => {
+      hasMobileMoved.current = false
+      touchActiveRef.current = false
+    }, 60)
+  }
+
+  // Pointer Handlers for Mouse Testing on Mobile Viewports
+  const handleMobilePointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch' || touchActiveRef.current) return
+    if (e.button !== 0) return
+
+    lastPointerType.current = 'mouse'
+    if (mobileMomentumRaf.current) {
+      cancelAnimationFrame(mobileMomentumRaf.current)
+      mobileMomentumRaf.current = null
+    }
+
+    isMobileDragging.current = true
+    hasMobileMoved.current = false
+    isHorizontalGesture.current = null
+
+    mobileStartX.current = e.clientX
+    mobileStartY.current = e.clientY
+    mobileLastX.current = e.clientX
+    mobileLastTime.current = performance.now()
+    mobileVelocity.current = 0
+  }
+
+  const handleMobilePointerMove = (e: React.PointerEvent) => {
+    if (!isMobileDragging.current || e.pointerType === 'touch' || touchActiveRef.current) return
+
+    const currentX = e.clientX
+    const currentY = e.clientY
+    const totalDx = currentX - mobileStartX.current
+    const totalDy = currentY - mobileStartY.current
+    const dx = currentX - mobileLastX.current
+
+    if (isHorizontalGesture.current === null && (Math.abs(totalDx) > 5 || Math.abs(totalDy) > 5)) {
+      isHorizontalGesture.current = Math.abs(totalDx) >= Math.abs(totalDy)
+    }
+
+    if (isHorizontalGesture.current === false) return
+
+    if (Math.abs(totalDx) > 7) {
+      hasMobileMoved.current = true
+      if (tappedProdId.current !== null) {
+        setTappedProduct(null)
+      }
+    }
+
+    const now = performance.now()
+    const dt = Math.max(1, now - mobileLastTime.current)
+    const instantV = dx / dt
+    mobileVelocity.current = mobileVelocity.current * 0.4 + instantV * 0.6
+    mobileLastX.current = currentX
+    mobileLastTime.current = now
+
+    const nextX = mobileTrackTranslate.current + dx
+    const wrappedX = wrapTranslate(nextX, cycleWidthRef.current)
+    mobileTrackTranslate.current = wrappedX
+    applyMobileTranslate(wrappedX)
+
+    if (Math.abs(dx) > 3) {
+      applyBrushingSwing(clamp(dx * 0.12, -2.5, 2.5))
+    }
+  }
+
+  const handleMobilePointerUp = (e: React.PointerEvent) => {
+    if (!isMobileDragging.current || e.pointerType === 'touch' || touchActiveRef.current) return
+    isMobileDragging.current = false
+
+    const timeSinceLast = performance.now() - mobileLastTime.current
+    if (hasMobileMoved.current && timeSinceLast < 120 && Math.abs(mobileVelocity.current) > 0.05) {
+      const v = clamp(mobileVelocity.current, -2.5, 2.5)
+      startMobileGlide(v)
+    } else {
+      mobileVelocity.current = 0
+    }
+
+    setTimeout(() => {
+      hasMobileMoved.current = false
+    }, 60)
+  }
+
+  // Synchronously turn/unturn product across all its loop clones
+  const setTappedProduct = useCallback((productId: string | null) => {
+    tappedProdId.current = productId
+    itemStates.current.forEach((s) => {
+      if (!s || !s.element) return
+      const prodId = s.element.getAttribute('data-product-id')
+      if (productId && prodId === productId) {
+        s.t = 1
+        s.swing.a = 0
+        s.swing.v = 0
+      } else {
+        s.t = 0
+      }
+    })
+  }, [])
 
   // -------------------------------------------------------------
   // PRIMARY 60 FPS rAF ENGINE (Swing Physics & Hover 3D Turn)
@@ -211,7 +485,7 @@ export default function RackTrack({
       itemStates.current.forEach((s) => {
         if (!s || !s.element) return
 
-        // Rapidly damp any residual swing on the hovered turning piece so it stays steady
+        // Rapidly damp any residual swing on the hovered/turned piece
         if (s.t === 1 && (Math.abs(s.swing.a) > 0 || Math.abs(s.swing.v) > 0)) {
           s.swing.a *= 0.75
           s.swing.v *= 0.4
@@ -293,6 +567,7 @@ export default function RackTrack({
 
   // Measure elements and initialize animation state
   const initItems = useCallback(() => {
+    const isMob = window.innerWidth < 768
     itemStates.current = itemRefs.current.map((el) => {
       if (!el) {
         return {
@@ -301,7 +576,7 @@ export default function RackTrack({
           views: [],
           p: 0,
           t: 0,
-          hpx: 440,
+          hpx: isMob ? 225 : 440,
           aspectSide: 0.35,
           aspectFront: 0.68,
           swing: { a: 0, v: 0 },
@@ -309,8 +584,7 @@ export default function RackTrack({
       }
 
       const garment = el.querySelector<HTMLElement>('.rack-garment') || el
-      const hpx =
-        garment.getBoundingClientRect().height || (window.innerWidth < 768 ? 225 : 440)
+      const hpx = isMob ? 225 : garment.getBoundingClientRect().height || 440
 
       const views = Array.from(el.querySelectorAll<HTMLElement>('.rack-view')).map((v) => ({
         el: v,
@@ -346,21 +620,44 @@ export default function RackTrack({
         swing: { a: 0, v: 0 },
       }
     })
-  }, [])
+
+    // Measure mobile cycle width accurately from DOM offsetLeft
+    if (isMob && cycleLen > 0) {
+      const firstEl = itemRefs.current[0]
+      const nextCycleEl = itemRefs.current[cycleLen]
+      if (firstEl && nextCycleEl) {
+        const cWidth = nextCycleEl.offsetLeft - firstEl.offsetLeft
+        if (cWidth > 0) {
+          cycleWidthRef.current = cWidth
+          if (!hasInitializedMobilePos.current) {
+            hasInitializedMobilePos.current = true
+            const initialPos = -2 * cWidth + START_PAD
+            mobileTrackTranslate.current = initialPos
+            if (mobileTrackRef.current) {
+              mobileTrackRef.current.style.transform = `translateX(${initialPos}px)`
+            }
+          }
+        }
+      }
+    }
+  }, [cycleLen])
 
   useEffect(() => {
     initItems()
+    if (window.innerWidth < 768 && mobileTrackTranslate.current && mobileTrackRef.current) {
+      mobileTrackRef.current.style.transform = `translateX(${mobileTrackTranslate.current}px)`
+    }
     window.addEventListener('resize', initItems)
     return () => window.removeEventListener('resize', initItems)
-  }, [initItems, products.length, isMobile, mobilePage])
+  }, [initItems, products.length, isMobile, mobileItems.length])
 
   // Reset desktop track position when <= 4 items
   useEffect(() => {
-    if (products.length <= 4 && trackRef.current) {
+    if (!isMobile && products.length <= 4 && trackRef.current) {
       trackRef.current.style.transform = 'none'
       currentTranslate.current = 0
     }
-  }, [products.length])
+  }, [products.length, isMobile])
 
   // -------------------------------------------------------------
   // Desktop Drag Handlers (> 4 items)
@@ -392,7 +689,6 @@ export default function RackTrack({
     velocity.current = deltaX * 0.8
     setTrackPosition(currentTranslate.current + deltaX)
 
-    // Gentle brushing swing impulse while dragging
     if (Math.abs(deltaX) > 6) {
       const brushIdx = curHoverIdx.current
       if (brushIdx !== null) {
@@ -407,73 +703,24 @@ export default function RackTrack({
     dragRaf.current = requestAnimationFrame(coast)
   }
 
-  // -------------------------------------------------------------
-  // Mobile Touch Swipe Handlers (Pages of max 4)
-  // -------------------------------------------------------------
-  const handleMobileTouchStart = (e: React.TouchEvent) => {
-    lastPointerType.current = 'touch'
-    touchStartX.current = e.touches[0].clientX
-    touchStartY.current = e.touches[0].clientY
-    touchDeltaX.current = 0
-    isHorizontalSwipe.current = null
-  }
-
-  const handleMobileTouchMove = (e: React.TouchEvent) => {
-    const currentX = e.touches[0].clientX
-    const currentY = e.touches[0].clientY
-    const dx = currentX - touchStartX.current
-    const dy = currentY - touchStartY.current
-
-    // Direction lock on first significant displacement
-    if (isHorizontalSwipe.current === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
-      isHorizontalSwipe.current = Math.abs(dx) > Math.abs(dy)
-    }
-
-    // If user is scrolling vertically down page, do not interfere!
-    if (isHorizontalSwipe.current === false) return
-
-    touchDeltaX.current = dx
-
-    // Swiping returns any tapped piece to side-resting pose
-    if (isHorizontalSwipe.current === true && Math.abs(dx) > 10) {
-      if (tappedIdx.current !== null && itemStates.current[tappedIdx.current]) {
-        itemStates.current[tappedIdx.current].t = 0
-        tappedIdx.current = null
-      }
-    }
-  }
-
-  const handleMobileTouchEnd = () => {
-    if (isHorizontalSwipe.current === true && Math.abs(touchDeltaX.current) > 36) {
-      if (touchDeltaX.current < 0 && mobilePage < totalMobilePages - 1) {
-        setMobilePage((p) => p + 1)
-      } else if (touchDeltaX.current > 0 && mobilePage > 0) {
-        setMobilePage((p) => p - 1)
-      }
-    }
-    isHorizontalSwipe.current = null
-    touchDeltaX.current = 0
-  }
-
   // Global tap-outside on mobile: returns any front-facing piece back to resting side position
   useEffect(() => {
-    const handleGlobalPointerDown = (e: PointerEvent) => {
-      if (tappedIdx.current === null) return
+    const handleGlobalOutside = (e: Event) => {
+      if (!tappedProdId.current) return
       const target = e.target as HTMLElement | null
       const item = target?.closest?.('.rack-item')
       if (!item) {
-        if (itemStates.current[tappedIdx.current]) {
-          itemStates.current[tappedIdx.current].t = 0
-        }
-        tappedIdx.current = null
+        setTappedProduct(null)
       }
     }
 
-    document.addEventListener('pointerdown', handleGlobalPointerDown, true)
+    document.addEventListener('pointerdown', handleGlobalOutside, true)
+    document.addEventListener('touchstart', handleGlobalOutside, { capture: true, passive: true })
     return () => {
-      document.removeEventListener('pointerdown', handleGlobalPointerDown, true)
+      document.removeEventListener('pointerdown', handleGlobalOutside, true)
+      document.removeEventListener('touchstart', handleGlobalOutside, true)
     }
-  }, [])
+  }, [setTappedProduct])
 
   // Handle click / tap on garment
   const handleItemClick = (
@@ -481,29 +728,24 @@ export default function RackTrack({
     product: Product,
     idx: number
   ) => {
-    if (hasMoved.current) return
+    if (hasMobileMoved.current || hasMoved.current) return
     e.stopPropagation()
 
     const s = itemStates.current[idx]
     if (!s || !s.element) return
 
     // Mobile / Touch handling: Two-tap behavior matching reference
-    // 1st tap turns garment to front view on the rack (touch hover effect)
+    // 1st tap turns garment to front view on the rack (touch hover reveal)
     // 2nd tap on the same garment opens the focus modal
     if (isMobile || lastPointerType.current === 'touch') {
-      if (tappedIdx.current !== idx) {
-        // Return previous tapped item to side view
-        if (tappedIdx.current !== null && itemStates.current[tappedIdx.current]) {
-          itemStates.current[tappedIdx.current].t = 0
-        }
-        tappedIdx.current = idx
-        s.t = 1
+      if (tappedProdId.current !== product.id) {
+        setTappedProduct(product.id)
         impulse(idx - 1, -12)
         impulse(idx + 1, 12)
         return
       }
       // Second tap on the same garment: proceed to open focus modal
-      tappedIdx.current = null
+      setTappedProduct(null)
     }
 
     // Capture source garment rect for true FLIP flight animation
@@ -515,9 +757,8 @@ export default function RackTrack({
 
   // Tapping track background turns any tapped mobile piece back
   const handleBackgroundClick = () => {
-    if (tappedIdx.current !== null && itemStates.current[tappedIdx.current]) {
-      itemStates.current[tappedIdx.current].t = 0
-      tappedIdx.current = null
+    if (tappedProdId.current !== null) {
+      setTappedProduct(null)
     }
     setHover(null)
   }
@@ -578,6 +819,7 @@ export default function RackTrack({
           >
             <div
               ref={trackRef}
+              id="wenzy-desktop-rack-track"
               className={`flex items-start gap-4 sm:gap-6 md:gap-8 px-8 sm:px-16 will-change-transform ${
                 products.length <= 4 ? 'w-full justify-center' : 'w-max'
               }`}
@@ -601,85 +843,42 @@ export default function RackTrack({
         </div>
       ) : (
         /* ------------------------------------------------------------- */
-        /* MOBILE VIEW (< 768px): Max 4 Items Per Page with Swipe Glides */
+        /* MOBILE VIEW (< 768px): True Infinite Looping Rail             */
+        /* Finger-Following Drag + Momentum Deceleration + 0 Seams       */
         /* ------------------------------------------------------------- */
         <div
-          className="w-full overflow-hidden touch-pan-y pt-2 pb-5"
+          className="w-full overflow-hidden touch-pan-y pt-2 pb-5 select-none"
           onTouchStart={handleMobileTouchStart}
           onTouchMove={handleMobileTouchMove}
           onTouchEnd={handleMobileTouchEnd}
+          onTouchCancel={handleMobileTouchEnd}
+          onPointerDown={handleMobilePointerDown}
+          onPointerMove={handleMobilePointerMove}
+          onPointerUp={handleMobilePointerUp}
+          onPointerCancel={handleMobilePointerUp}
         >
-          {totalMobilePages <= 1 ? (
-            /* Single Page (<= 4 items): Clean centered rail, comfortable 4-item fit */
-            <div className="flex items-start justify-center gap-2 sm:gap-3 px-2 w-full">
-              {products.map((product, idx) => (
-                <div key={product.id} className="shrink-0">
-                  <RackHangerItem
-                    ref={(el) => {
-                      itemRefs.current[idx] = el
-                    }}
-                    product={product}
-                    index={idx}
-                    onClick={(e) => handleItemClick(e, product, idx)}
-                    onMouseEnter={() => setHover(idx)}
-                    onMouseLeave={() => setHover(null)}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            /* Multi-Page Carousel (> 4 items): Horizontal glide per page of 4 */
-            <>
+          <div
+            ref={mobileTrackRef}
+            id="wenzy-mobile-rack-track"
+            className="flex items-start gap-3 will-change-transform"
+            style={{ width: 'max-content' }}
+          >
+            {mobileItems.map((product, globalIdx) => (
               <div
-                className="flex w-full transition-transform duration-400 ease-out will-change-transform"
-                style={{
-                  transform: `translateX(-${mobilePage * 100}%)`,
-                }}
+                key={`mob-item-${globalIdx}-${product.id}`}
+                className="shrink-0"
               >
-                {mobilePages.map((pageItems, pageIdx) => (
-                  <div
-                    key={`mob-page-${pageIdx}`}
-                    className="w-full shrink-0 flex items-start justify-center gap-2 sm:gap-3 px-2"
-                  >
-                    {pageItems.map((product, pItemIdx) => {
-                      const globalIdx = pageIdx * MOBILE_PAGE_SIZE + pItemIdx
-                      return (
-                        <div key={product.id} className="shrink-0">
-                          <RackHangerItem
-                            ref={(el) => {
-                              itemRefs.current[globalIdx] = el
-                            }}
-                            product={product}
-                            index={globalIdx}
-                            onClick={(e) => handleItemClick(e, product, globalIdx)}
-                            onMouseEnter={() => setHover(globalIdx)}
-                            onMouseLeave={() => setHover(null)}
-                          />
-                        </div>
-                      )
-                    })}
-                  </div>
-                ))}
+                <RackHangerItem
+                  ref={(el) => {
+                    itemRefs.current[globalIdx] = el
+                  }}
+                  product={product}
+                  index={globalIdx}
+                  onClick={(e) => handleItemClick(e, product, globalIdx)}
+                />
               </div>
-
-              {/* Mobile Pagination Indicator Dots */}
-              <div className="flex items-center justify-center gap-2 mt-4">
-                {mobilePages.map((_, pIdx) => (
-                  <button
-                    key={pIdx}
-                    type="button"
-                    onClick={() => setMobilePage(pIdx)}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      pIdx === mobilePage
-                        ? 'w-6 bg-neutral-900'
-                        : 'w-1.5 bg-neutral-300 hover:bg-neutral-500'
-                    }`}
-                    aria-label={`Go to page ${pIdx + 1} of ${totalMobilePages}`}
-                  />
-                ))}
-              </div>
-            </>
-          )}
+            ))}
+          </div>
         </div>
       )}
     </div>
