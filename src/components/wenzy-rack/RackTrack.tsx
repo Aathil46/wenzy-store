@@ -433,6 +433,14 @@ export default function RackTrack({
     if (isHorizontalSwipe.current === false) return
 
     touchDeltaX.current = dx
+
+    // Swiping returns any tapped piece to side-resting pose
+    if (isHorizontalSwipe.current === true && Math.abs(dx) > 10) {
+      if (tappedIdx.current !== null && itemStates.current[tappedIdx.current]) {
+        itemStates.current[tappedIdx.current].t = 0
+        tappedIdx.current = null
+      }
+    }
   }
 
   const handleMobileTouchEnd = () => {
@@ -447,6 +455,26 @@ export default function RackTrack({
     touchDeltaX.current = 0
   }
 
+  // Global tap-outside on mobile: returns any front-facing piece back to resting side position
+  useEffect(() => {
+    const handleGlobalPointerDown = (e: PointerEvent) => {
+      if (tappedIdx.current === null) return
+      const target = e.target as HTMLElement | null
+      const item = target?.closest?.('.rack-item')
+      if (!item) {
+        if (itemStates.current[tappedIdx.current]) {
+          itemStates.current[tappedIdx.current].t = 0
+        }
+        tappedIdx.current = null
+      }
+    }
+
+    document.addEventListener('pointerdown', handleGlobalPointerDown, true)
+    return () => {
+      document.removeEventListener('pointerdown', handleGlobalPointerDown, true)
+    }
+  }, [])
+
   // Handle click / tap on garment
   const handleItemClick = (
     e: React.MouseEvent<HTMLDivElement>,
@@ -459,8 +487,24 @@ export default function RackTrack({
     const s = itemStates.current[idx]
     if (!s || !s.element) return
 
-    // Reset any tapped state
-    tappedIdx.current = null
+    // Mobile / Touch handling: Two-tap behavior matching reference
+    // 1st tap turns garment to front view on the rack (touch hover effect)
+    // 2nd tap on the same garment opens the focus modal
+    if (isMobile || lastPointerType.current === 'touch') {
+      if (tappedIdx.current !== idx) {
+        // Return previous tapped item to side view
+        if (tappedIdx.current !== null && itemStates.current[tappedIdx.current]) {
+          itemStates.current[tappedIdx.current].t = 0
+        }
+        tappedIdx.current = idx
+        s.t = 1
+        impulse(idx - 1, -12)
+        impulse(idx + 1, 12)
+        return
+      }
+      // Second tap on the same garment: proceed to open focus modal
+      tappedIdx.current = null
+    }
 
     // Capture source garment rect for true FLIP flight animation
     const garment = s.garment || s.element
