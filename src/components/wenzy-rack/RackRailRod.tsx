@@ -11,9 +11,6 @@ interface RackRailRodProps {
 export default function RackRailRod({ className = '' }: RackRailRodProps) {
   return (
     <div className={`relative w-full pointer-events-none select-none ${className}`}>
-      {/* Ambient shadow cast on the back wall */}
-      <div className="absolute top-4 inset-x-0 h-6 bg-radial from-neutral-400/20 via-transparent to-transparent blur-md" />
-
       {/* SVG Industrial Metallic Rod */}
       <svg
         className="w-full h-12 overflow-visible"
@@ -39,9 +36,9 @@ export default function RackRailRod({ className = '' }: RackRailRodProps) {
             <stop offset="100%" stopColor="#0F172A" />
           </linearGradient>
 
-          {/* Drop shadow filter */}
+          {/* Clean subtle contact shadow */}
           <filter id="rod-drop-shadow" x="-5%" y="-20%" width="110%" height="200%">
-            <feDropShadow dx="0" dy="6" stdDeviation="4" floodColor="#000000" floodOpacity="0.18" />
+            <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000000" floodOpacity="0.08" />
           </filter>
         </defs>
 

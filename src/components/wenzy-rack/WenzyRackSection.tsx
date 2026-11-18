@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Sparkles, Eye } from 'lucide-react'
+import { Eye } from 'lucide-react'
 import { getRackProducts } from '../../lib/storeApi'
 import type { Product } from '../../types/database'
 import RackRailRod from './RackRailRod'
@@ -293,16 +293,11 @@ export default function WenzyRackSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Heading & Subtitle */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-neutral-100 rounded-full text-neutral-800 text-[10px] font-black uppercase tracking-widest mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-neutral-900" />
-            <span>Interactive Boutique Experience</span>
-          </div>
-
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-neutral-950 font-heading">
             WENZY RACK
           </h2>
           <p className="text-xs sm:text-sm text-neutral-500 uppercase tracking-widest mt-2 font-medium">
-            — Hover a piece · click to look closer
+            NEW ARRIVALS
           </p>
 
           {/* Mode Indicator Banner */}

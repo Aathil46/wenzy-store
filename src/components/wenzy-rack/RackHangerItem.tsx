@@ -57,14 +57,6 @@ const RackHangerItem = forwardRef<HTMLDivElement, RackHangerItemProps>(
       >
         {/* Garment 3D Viewport (Height dynamically set by rack engine or CSS) */}
         <div className="rack-garment relative">
-          {/* Paper Hanging Price Tag (hanging from collar thread) */}
-          <div className="rack-tag pointer-events-none">
-            <div className="w-[1px] h-3.5 bg-neutral-400 mx-auto" />
-            <div className="bg-neutral-900 text-white px-2 py-0.5 text-[9px] font-black uppercase tracking-tight rounded-xs shadow-md border border-neutral-700 whitespace-nowrap">
-              ₹{product.price.toLocaleString('en-IN')}
-            </div>
-          </div>
-
           {/* VIEW 0: Side Profile (Resting state, pos="0") */}
           <div
             className="rack-view"
@@ -108,16 +100,6 @@ const RackHangerItem = forwardRef<HTMLDivElement, RackHangerItemProps>(
               decoding="async"
               className="pointer-events-none"
             />
-          </div>
-        </div>
-
-        {/* Product Caption below garment */}
-        <div className="mt-3 text-center max-w-[180px] select-none pointer-events-none transition-opacity duration-300">
-          <div className="text-[11px] font-black uppercase tracking-wider text-neutral-900 truncate">
-            {product.name}
-          </div>
-          <div className="text-[10px] text-neutral-400 font-mono mt-0.5">
-            ₹{product.price.toLocaleString('en-IN')}
           </div>
         </div>
       </div>

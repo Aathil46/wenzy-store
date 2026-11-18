@@ -113,11 +113,11 @@ export default function RackTrack({
   const tappedIdx = useRef<number | null>(null)
   const lastPointerType = useRef<string>('mouse')
 
-  // Animation constants matching reference site exactly
-  const HOVER_MS = 650
-  const K_SPRING = 26
-  const K_DAMP = 2.3
-  const MAX_SWING_A = 11
+  // Animation constants matching natural damped physics
+  const HOVER_MS = 600
+  const K_SPRING = 24
+  const K_DAMP = 14
+  const MAX_SWING_A = 3.5
 
   // Smoothstep easing: 3x^2 - 2x^3
   const ss = (x: number) => x * x * (3 - 2 * x)
@@ -128,7 +128,7 @@ export default function RackTrack({
     if (idx === null || idx < 0 || idx >= itemStates.current.length) return
     const s = itemStates.current[idx]
     if (s && s.swing) {
-      s.swing.v += v * 0.6
+      s.swing.v += v * 0.4
     }
   }, [])
 
@@ -174,17 +174,20 @@ export default function RackTrack({
       const prev = curHoverIdx.current
       if (prev !== null && itemStates.current[prev]) {
         itemStates.current[prev].t = 0
-        // Return impulse to former neighbors
-        impulse(prev - 1, 12)
-        impulse(prev + 1, -12)
+        // Gentle return impulse to former neighbors
+        impulse(prev - 1, 2.5)
+        impulse(prev + 1, -2.5)
       }
 
       curHoverIdx.current = idx
       if (idx !== null && itemStates.current[idx]) {
         itemStates.current[idx].t = 1
-        // Outward swing impulse to neighbors
-        impulse(idx - 1, -26)
-        impulse(idx + 1, 26)
+        // Smoothly stabilize hovered item itself so it turns with 0 shaking
+        itemStates.current[idx].swing.a = 0
+        itemStates.current[idx].swing.v = 0
+        // Gentle subtle nudge to immediate neighbors
+        impulse(idx - 1, -5)
+        impulse(idx + 1, 5)
       }
     },
     [impulse]
@@ -208,8 +211,16 @@ export default function RackTrack({
       itemStates.current.forEach((s) => {
         if (!s || !s.element) return
 
-        // 1. Damped Pendulum Swing
-        if (Math.abs(s.swing.a) > 0.03 || Math.abs(s.swing.v) > 0.08) {
+        // Rapidly damp any residual swing on the hovered turning piece so it stays steady
+        if (s.t === 1 && (Math.abs(s.swing.a) > 0 || Math.abs(s.swing.v) > 0)) {
+          s.swing.a *= 0.75
+          s.swing.v *= 0.4
+          if (Math.abs(s.swing.a) < 0.02) s.swing.a = 0
+          if (Math.abs(s.swing.v) < 0.05) s.swing.v = 0
+        }
+
+        // 1. Controlled Damped Pendulum Swing
+        if (Math.abs(s.swing.a) > 0.02 || Math.abs(s.swing.v) > 0.05) {
           const h = dtSec / 2
           for (let i = 0; i < 2; i++) {
             s.swing.v += (-K_SPRING * s.swing.a - K_DAMP * s.swing.v) * h
@@ -217,10 +228,10 @@ export default function RackTrack({
           }
           if (s.swing.a > MAX_SWING_A) {
             s.swing.a = MAX_SWING_A
-            s.swing.v *= -0.35
+            s.swing.v *= -0.2
           } else if (s.swing.a < -MAX_SWING_A) {
             s.swing.a = -MAX_SWING_A
-            s.swing.v *= -0.35
+            s.swing.v *= -0.2
           }
           s.element.style.setProperty('--sr-sw', `${(-s.swing.a).toFixed(2)}deg`)
         } else if (s.swing.a !== 0 || s.swing.v !== 0) {
@@ -380,11 +391,11 @@ export default function RackTrack({
     velocity.current = deltaX * 0.8
     setTrackPosition(currentTranslate.current + deltaX)
 
-    // Brushing swing impulse while dragging
-    if (Math.abs(deltaX) > 4) {
+    // Gentle brushing swing impulse while dragging
+    if (Math.abs(deltaX) > 6) {
       const brushIdx = curHoverIdx.current
       if (brushIdx !== null) {
-        impulse(brushIdx, clamp(deltaX * 0.4, -20, 20))
+        impulse(brushIdx, clamp(deltaX * 0.15, -4, 4))
       }
     }
   }
@@ -456,8 +467,8 @@ export default function RackTrack({
         }
         tappedIdx.current = idx
         s.t = 1
-        impulse(idx - 1, -26)
-        impulse(idx + 1, 26)
+        impulse(idx - 1, -5)
+        impulse(idx + 1, 5)
         return
       }
       tappedIdx.current = null
