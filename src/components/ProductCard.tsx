@@ -13,9 +13,15 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
 
-  // Sort images: primary first, then secondary
-  const primaryImg = product.images?.find((img) => img.is_primary)?.image_url || product.images?.[0]?.image_url || '/assets/wenzy_front_texture.png'
-  const secondaryImg = product.images?.[1]?.image_url || primaryImg
+  // Prioritize standard catalog photography for category grids
+  const catalogImgs = product.images?.filter((img) => !img.view_type || img.view_type === 'standard') || []
+  const primaryImg =
+    catalogImgs.find((img) => img.is_primary)?.image_url ||
+    catalogImgs[0]?.image_url ||
+    product.images?.find((img) => img.is_primary)?.image_url ||
+    product.images?.[0]?.image_url ||
+    '/assets/wenzy_front_texture.png'
+  const secondaryImg = catalogImgs[1]?.image_url || product.images?.[1]?.image_url || primaryImg
 
   // Calculate discount percentage if compare_at_price exists
   const hasDiscount = product.compare_at_price && product.compare_at_price > product.price

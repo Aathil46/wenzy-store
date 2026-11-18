@@ -13,6 +13,11 @@
 ALTER TABLE public.product_images
 ADD COLUMN IF NOT EXISTS view_type TEXT DEFAULT 'standard';
 
+-- Backfill any existing NULL view_type values to 'standard'
+UPDATE public.product_images
+SET view_type = 'standard'
+WHERE view_type IS NULL;
+
 -- Enforce valid view_type classifications via check constraint
 DO $$
 BEGIN
@@ -30,6 +35,15 @@ END $$;
 ALTER TABLE public.products
 ADD COLUMN IF NOT EXISTS in_clothing_rail BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS rail_display_order INTEGER DEFAULT 0;
+
+-- Backfill any existing NULL rail flags to safe defaults
+UPDATE public.products
+SET in_clothing_rail = FALSE
+WHERE in_clothing_rail IS NULL;
+
+UPDATE public.products
+SET rail_display_order = 0
+WHERE rail_display_order IS NULL;
 
 -- 3. Add performance indexes for high-speed rail querying
 CREATE INDEX IF NOT EXISTS idx_products_clothing_rail 

@@ -287,46 +287,48 @@ export default function AdminProducts() {
     try {
       // Assemble catalog images + dedicated WENZY RACK cutout images
       const allImagesToSave = [
-        ...images.map((img) => ({
-          image_url: img.image_url,
-          alt_text: img.alt_text || formData.name,
-          is_primary: img.is_primary,
-          view_type: 'standard' as const,
-        })),
-        ...(rackSideImage
+        ...images
+          .filter((img) => Boolean(img.image_url?.trim()))
+          .map((img) => ({
+            image_url: img.image_url.trim(),
+            alt_text: img.alt_text || formData.name,
+            is_primary: img.is_primary,
+            view_type: 'standard' as const,
+          })),
+        ...(rackSideImage?.trim()
           ? [
               {
-                image_url: rackSideImage,
+                image_url: rackSideImage.trim(),
                 alt_text: `${formData.name} - Side Profile (Rail)`,
                 is_primary: false,
                 view_type: 'side' as const,
               },
             ]
           : []),
-        ...(rackFrontImage
+        ...(rackFrontImage?.trim()
           ? [
               {
-                image_url: rackFrontImage,
+                image_url: rackFrontImage.trim(),
                 alt_text: `${formData.name} - Front View`,
                 is_primary: false,
                 view_type: 'front' as const,
               },
             ]
           : []),
-        ...(rackBackImage
+        ...(rackBackImage?.trim()
           ? [
               {
-                image_url: rackBackImage,
+                image_url: rackBackImage.trim(),
                 alt_text: `${formData.name} - Back View`,
                 is_primary: false,
                 view_type: 'back' as const,
               },
             ]
           : []),
-        ...(rackDetailImage
+        ...(rackDetailImage?.trim()
           ? [
               {
-                image_url: rackDetailImage,
+                image_url: rackDetailImage.trim(),
                 alt_text: `${formData.name} - Detail View`,
                 is_primary: false,
                 view_type: 'detail' as const,
