@@ -61,7 +61,7 @@ export default function AdminLayout() {
   const navItems = [
     { label: 'Overview', path: '/admin', icon: LayoutDashboard },
     { label: 'Banners', path: '/admin/banners', icon: ImageIcon },
-    { label: 'Products', path: '/admin/products', icon: Package },
+    { label: 'Products & WENZY RACK', path: '/admin/products', icon: Package },
     { label: 'Categories', path: '/admin/categories', icon: Layers },
     { label: 'Orders', path: '/admin/orders', icon: ShoppingBag },
     { label: 'Customers', path: '/admin/customers', icon: Users },

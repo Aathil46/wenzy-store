@@ -153,13 +153,13 @@ export default function RackFocusModal({ isOpen, product, onClose }: RackFocusMo
                     <img
                       src={frontImage || sideImage}
                       alt={`${product.name} - Front View`}
-                      className="h-[360px] sm:h-[440px] w-auto max-w-full object-contain filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] select-none"
+                      className="h-[360px] sm:h-[440px] w-auto max-w-full object-contain filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] select-none pointer-events-none"
                     />
                   </div>
 
                   {/* BACK FACE (Rotated 180deg) */}
                   <div
-                    className="absolute inset-0 w-full h-full flex flex-col items-center justify-center"
+                    className="absolute inset-0 w-full h-full flex flex-col items-center justify-center pointer-events-none"
                     style={{
                       backfaceVisibility: 'hidden',
                       WebkitBackfaceVisibility: 'hidden',
@@ -185,14 +185,14 @@ export default function RackFocusModal({ isOpen, product, onClose }: RackFocusMo
                     <img
                       src={backImage || frontImage}
                       alt={`${product.name} - Back View`}
-                      className="h-[360px] sm:h-[440px] w-auto max-w-full object-contain filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] select-none"
+                      className="h-[360px] sm:h-[440px] w-auto max-w-full object-contain filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] select-none pointer-events-none"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Minimalist 3D Angle Switching Tabs ([ FRONT ] / [ BACK ]) */}
-              <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 p-1 rounded-full">
+              <div className="relative z-30 flex items-center gap-2 bg-neutral-900 border border-neutral-800 p-1 rounded-full shadow-lg">
                 <button
                   type="button"
                   onClick={() => setActiveAngle('front')}

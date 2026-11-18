@@ -31,6 +31,7 @@ export default function AdminProducts() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [rackFilter, setRackFilter] = useState<'all' | 'rack'>('all')
 
   // Edit / Create Modal state
   const [modalOpen, setModalOpen] = useState(false)
@@ -90,7 +91,7 @@ export default function AdminProducts() {
     loadData()
   }, [])
 
-  const openCreateModal = () => {
+  const openCreateModal = (forRack = false) => {
     setEditingProduct(null)
     setFormData({
       name: '',
@@ -102,8 +103,8 @@ export default function AdminProducts() {
       is_active: true,
       is_featured: false,
       is_new: true,
-      in_clothing_rail: false,
-      rail_display_order: 0,
+      in_clothing_rail: forRack,
+      rail_display_order: forRack ? (products.filter((p) => p.in_clothing_rail).length + 1) : 0,
       fabric: '100% Combed Cotton French Terry',
       gsm: 240,
       fit: 'Oversized Drop-Shoulder Fit',
@@ -384,11 +385,18 @@ export default function AdminProducts() {
     }
   }
 
-  const filteredProducts = products.filter(
-    (p) =>
+  const rackProductsCount = products.filter((p) => p.in_clothing_rail).length
+
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.slug.toLowerCase().includes(search.toLowerCase())
-  )
+
+    if (rackFilter === 'rack') {
+      return matchesSearch && p.in_clothing_rail
+    }
+    return matchesSearch
+  })
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -403,22 +411,91 @@ export default function AdminProducts() {
           </p>
         </div>
 
-        <button onClick={openCreateModal} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          <span>Add New Product</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => openCreateModal(true)}
+            className="btn-secondary flex items-center gap-1.5 border-black text-xs font-black"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-black" />
+            <span>+ Add to WENZY RACK</span>
+          </button>
+
+          <button onClick={() => openCreateModal(false)} className="btn-primary flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            <span>Add New Product</span>
+          </button>
+        </div>
+      </div>
+
+      {/* WENZY RACK (Interactive Clothing Rail) Dedicated Control Header */}
+      <div className="bg-neutral-900 text-white p-5 border border-neutral-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="p-1 bg-white text-black rounded-xs">
+              <Sparkles className="w-3.5 h-3.5" />
+            </span>
+            <span className="font-heading font-black uppercase text-sm tracking-wider text-white">
+              WENZY RACK (Interactive Clothing Rail Controls)
+            </span>
+            <span className="px-2 py-0.5 bg-neutral-800 text-neutral-300 text-[10px] font-mono rounded">
+              {rackProductsCount} piece{rackProductsCount !== 1 ? 's' : ''} on rail
+            </span>
+          </div>
+          <p className="text-xs text-neutral-400 max-w-2xl leading-relaxed">
+            Configure boutique pieces for the suspended clothing rail below the hero banner. Click <strong>&quot;+ Add to WENZY RACK&quot;</strong> (or edit any product) to set rail position and upload the 3 required transparent cutouts: <strong>Side-Profile</strong>, <strong>Front View</strong>, and <strong>Back View</strong>.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setRackFilter(rackFilter === 'rack' ? 'all' : 'rack')}
+            className={`px-3 py-2 text-xs font-bold uppercase tracking-wider border transition-colors ${
+              rackFilter === 'rack'
+                ? 'bg-white text-black border-white'
+                : 'bg-neutral-800 text-neutral-300 border-neutral-700 hover:text-white'
+            }`}
+          >
+            {rackFilter === 'rack' ? 'Show All Products' : 'Filter Rack Pieces Only'}
+          </button>
+        </div>
       </div>
 
       {/* 2. Search & Filter Bar */}
-      <div className="flex items-center gap-3 bg-white p-3 border border-neutral-200">
-        <Search className="w-4 h-4 text-neutral-400 ml-2" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="SEARCH PRODUCTS BY NAME OR SLUG..."
-          className="w-full text-xs font-bold uppercase tracking-wider text-black outline-none placeholder-neutral-400"
-        />
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-white p-3 border border-neutral-200">
+        <div className="flex-1 flex items-center gap-2">
+          <Search className="w-4 h-4 text-neutral-400 ml-2" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="SEARCH PRODUCTS BY NAME OR SLUG..."
+            className="w-full text-xs font-bold uppercase tracking-wider text-black outline-none placeholder-neutral-400"
+          />
+        </div>
+
+        {/* Quick Filter Buttons */}
+        <div className="flex items-center gap-1.5 border-t sm:border-t-0 sm:border-l border-neutral-200 pt-2 sm:pt-0 sm:pl-3">
+          <button
+            type="button"
+            onClick={() => setRackFilter('all')}
+            className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-colors ${
+              rackFilter === 'all' ? 'bg-black text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+            }`}
+          >
+            All Products ({products.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setRackFilter('rack')}
+            className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded flex items-center gap-1 transition-colors ${
+              rackFilter === 'rack' ? 'bg-black text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+            }`}
+          >
+            <span>★ WENZY RACK</span>
+            <span className="font-mono">({rackProductsCount})</span>
+          </button>
+        </div>
       </div>
 
       {/* 3. Products Table */}
@@ -429,7 +506,7 @@ export default function AdminProducts() {
       ) : filteredProducts.length === 0 ? (
         <div className="bg-white p-12 text-center border border-neutral-200 space-y-3">
           <div className="text-sm font-bold uppercase tracking-wider text-black">No Products Found</div>
-          <button onClick={openCreateModal} className="btn-primary text-xs">
+          <button onClick={() => openCreateModal(false)} className="btn-primary text-xs">
             Create First Product
           </button>
         </div>
