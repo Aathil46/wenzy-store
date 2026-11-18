@@ -12,15 +12,14 @@ interface RackHangerItemProps {
 /**
  * Individual hanging piece on the WENZY RACK.
  *
- * Requirements matching the reference Nike clothing rail:
- * - NO artificial/duplicate SVG hanger! The studio photography cutouts already contain their own built-in natural hanger and hook.
- * - Hook naturally meets the top rail rod without visible gaps or duplicate hooks.
+ * Clean, minimalist rail presentation:
+ * - Direct photographic cutouts on the metallic rail rod
+ * - No floating price tags or text clutter on the rail
+ * - Full product name, price, sizes, and actions preserved in the expanded view
  * - 3 layered views:
  *   - pos="0": side profile (resting rail state)
  *   - pos="1": front view (revealed on hover and in focus view)
  *   - pos="-1": back view (revealed in 3D rotateY focus view)
- * - Hanging price tag suspended from collar
- * - Natural uncompromised proportions without stretch or distortion
  */
 const RackHangerItem = forwardRef<HTMLDivElement, RackHangerItemProps>(
   ({ product, index, onClick, onMouseEnter, onMouseLeave }, ref) => {

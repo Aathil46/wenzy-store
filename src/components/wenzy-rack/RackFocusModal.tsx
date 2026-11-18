@@ -333,7 +333,7 @@ export default function RackFocusModal({
                 <img
                   src={frontImage}
                   alt={`${product.name} – front`}
-                  className="h-full w-auto max-w-full object-contain pointer-events-none drop-shadow-[0_24px_36px_rgba(0,0,0,0.45)]"
+                  className="h-full w-auto max-w-full object-contain pointer-events-none"
                 />
               </div>
 
@@ -350,7 +350,7 @@ export default function RackFocusModal({
                 <img
                   src={backImage}
                   alt={`${product.name} – back`}
-                  className="h-full w-auto max-w-full object-contain pointer-events-none drop-shadow-[0_24px_36px_rgba(0,0,0,0.45)]"
+                  className="h-full w-auto max-w-full object-contain pointer-events-none"
                 />
               </div>
             </div>
