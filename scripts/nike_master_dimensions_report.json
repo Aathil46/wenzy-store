@@ -1,0 +1,372 @@
+[
+  {
+    "name": "Blazzer",
+    "price": "$199.00",
+    "views": {
+      "side": {
+        "dom_attrs": [
+          "525x1500"
+        ],
+        "urls": [
+          "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071515248388.webp"
+        ],
+        "assets": [
+          {
+            "url": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071515248388.webp",
+            "content_type": "image/png",
+            "width": 525,
+            "height": 1500,
+            "format": "PNG",
+            "mode": "RGBA",
+            "has_alpha": true,
+            "transparent_bg_percentage": 31.8,
+            "aspect_ratio_decimal": 0.35,
+            "aspect_ratio_ratio": "525:1500",
+            "file_size_kb": 961.61
+          }
+        ]
+      },
+      "front": {
+        "dom_attrs": [
+          "923x1500"
+        ],
+        "urls": [
+          "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514560224.webp"
+        ],
+        "assets": [
+          {
+            "url": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514560224.webp",
+            "content_type": "image/png",
+            "width": 923,
+            "height": 1500,
+            "format": "PNG",
+            "mode": "RGBA",
+            "has_alpha": true,
+            "transparent_bg_percentage": 25.61,
+            "aspect_ratio_decimal": 0.6153,
+            "aspect_ratio_ratio": "923:1500",
+            "file_size_kb": 1505.1
+          }
+        ]
+      },
+      "back": {
+        "dom_attrs": [
+          "956x1500"
+        ],
+        "urls": [
+          "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514492742.webp"
+        ],
+        "assets": [
+          {
+            "url": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514492742.webp",
+            "content_type": "image/png",
+            "width": 956,
+            "height": 1500,
+            "format": "PNG",
+            "mode": "RGBA",
+            "has_alpha": true,
+            "transparent_bg_percentage": 26.22,
+            "aspect_ratio_decimal": 0.6373,
+            "aspect_ratio_ratio": "956:1500",
+            "file_size_kb": 1810.07
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "Hoodie",
+    "price": "$199.00",
+    "views": {
+      "side": {
+        "dom_attrs": [
+          "459x1500"
+        ],
+        "urls": [
+          "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514447647.webp"
+        ],
+        "assets": [
+          {
+            "url": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514447647.webp",
+            "content_type": "image/png",
+            "width": 459,
+            "height": 1500,
+            "format": "PNG",
+            "mode": "RGBA",
+            "has_alpha": true,
+            "transparent_bg_percentage": 37.0,
+            "aspect_ratio_decimal": 0.306,
+            "aspect_ratio_ratio": "459:1500",
+            "file_size_kb": 667.96
+          }
+        ]
+      },
+      "front": {
+        "dom_attrs": [
+          "1082x1500"
+        ],
+        "urls": [
+          "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514403809.webp"
+        ],
+        "assets": [
+          {
+            "url": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514403809.webp",
+            "content_type": "image/png",
+            "width": 1082,
+            "height": 1500,
+            "format": "PNG",
+            "mode": "RGBA",
+            "has_alpha": true,
+            "transparent_bg_percentage": 30.71,
+            "aspect_ratio_decimal": 0.7213,
+            "aspect_ratio_ratio": "1082:1500",
+            "file_size_kb": 1523.87
+          }
+        ]
+      },
+      "back": {
+        "dom_attrs": [
+          "1084x1500"
+        ],
+        "urls": [],
+        "assets": []
+      }
+    }
+  },
+  {
+    "name": "Hoodie Black",
+    "price": "$199.00",
+    "views": {
+      "side": {
+        "dom_attrs": [
+          "431x1508"
+        ],
+        "urls": [
+          "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071101516777.webp"
+        ],
+        "assets": [
+          {
+            "url": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071101516777.webp",
+            "content_type": "image/png",
+            "width": 431,
+            "height": 1508,
+            "format": "PNG",
+            "mode": "RGBA",
+            "has_alpha": true,
+            "transparent_bg_percentage": 43.06,
+            "aspect_ratio_decimal": 0.2858,
+            "aspect_ratio_ratio": "431:1508",
+            "file_size_kb": 278.93
+          }
+        ]
+      },
+      "front": {
+        "dom_attrs": [
+          "1125x1508"
+        ],
+        "urls": [
+          "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071101472773.webp"
+        ],
+        "assets": [
+          {
+            "url": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071101472773.webp",
+            "content_type": "image/png",
+            "width": 1125,
+            "height": 1508,
+            "format": "PNG",
+            "mode": "RGBA",
+            "has_alpha": true,
+            "transparent_bg_percentage": 35.49,
+            "aspect_ratio_decimal": 0.746,
+            "aspect_ratio_ratio": "1125:1508",
+            "file_size_kb": 869.28
+          }
+        ]
+      },
+      "back": {
+        "dom_attrs": [
+          "1128x1508"
+        ],
+        "urls": [],
+        "assets": []
+      }
+    }
+  },
+  {
+    "name": "Sweatshirt",
+    "price": "$199.00",
+    "views": {
+      "side": {
+        "dom_attrs": [
+          "383x1500"
+        ],
+        "urls": [
+          "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071517384792.webp"
+        ],
+        "assets": [
+          {
+            "url": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071517384792.webp",
+            "content_type": "image/png",
+            "width": 383,
+            "height": 1500,
+            "format": "PNG",
+            "mode": "RGBA",
+            "has_alpha": true,
+            "transparent_bg_percentage": 40.34,
+            "aspect_ratio_decimal": 0.2553,
+            "aspect_ratio_ratio": "383:1500",
+            "file_size_kb": 526.63
+          }
+        ]
+      },
+      "front": {
+        "dom_attrs": [
+          "1033x1500"
+        ],
+        "urls": [
+          "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071517318112.webp"
+        ],
+        "assets": [
+          {
+            "url": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071517318112.webp",
+            "content_type": "image/png",
+            "width": 1033,
+            "height": 1500,
+            "format": "PNG",
+            "mode": "RGBA",
+            "has_alpha": true,
+            "transparent_bg_percentage": 32.96,
+            "aspect_ratio_decimal": 0.6887,
+            "aspect_ratio_ratio": "1033:1500",
+            "file_size_kb": 1637.46
+          }
+        ]
+      },
+      "back": {
+        "dom_attrs": [
+          "1035x1500"
+        ],
+        "urls": [],
+        "assets": []
+      }
+    }
+  },
+  {
+    "name": "Sweatshirt Plus",
+    "price": "$199.00",
+    "views": {
+      "side": {
+        "dom_attrs": [
+          "501x1500"
+        ],
+        "urls": [
+          "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071517049148.webp"
+        ],
+        "assets": [
+          {
+            "url": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071517049148.webp",
+            "content_type": "image/png",
+            "width": 501,
+            "height": 1500,
+            "format": "PNG",
+            "mode": "RGBA",
+            "has_alpha": true,
+            "transparent_bg_percentage": 40.25,
+            "aspect_ratio_decimal": 0.334,
+            "aspect_ratio_ratio": "501:1500",
+            "file_size_kb": 769.92
+          }
+        ]
+      },
+      "front": {
+        "dom_attrs": [
+          "984x1500"
+        ],
+        "urls": [
+          "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071516592552.webp"
+        ],
+        "assets": [
+          {
+            "url": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071516592552.webp",
+            "content_type": "image/png",
+            "width": 984,
+            "height": 1500,
+            "format": "PNG",
+            "mode": "RGBA",
+            "has_alpha": true,
+            "transparent_bg_percentage": 27.85,
+            "aspect_ratio_decimal": 0.656,
+            "aspect_ratio_ratio": "984:1500",
+            "file_size_kb": 1566.2
+          }
+        ]
+      },
+      "back": {
+        "dom_attrs": [
+          "1067x1500"
+        ],
+        "urls": [],
+        "assets": []
+      }
+    }
+  },
+  {
+    "name": "Tshirt",
+    "price": "$199.00",
+    "views": {
+      "side": {
+        "dom_attrs": [
+          "396x1500"
+        ],
+        "urls": [
+          "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071516549024.webp"
+        ],
+        "assets": [
+          {
+            "url": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071516549024.webp",
+            "content_type": "image/png",
+            "width": 396,
+            "height": 1500,
+            "format": "PNG",
+            "mode": "RGBA",
+            "has_alpha": true,
+            "transparent_bg_percentage": 32.6,
+            "aspect_ratio_decimal": 0.264,
+            "aspect_ratio_ratio": "396:1500",
+            "file_size_kb": 456.68
+          }
+        ]
+      },
+      "front": {
+        "dom_attrs": [
+          "1066x1500"
+        ],
+        "urls": [
+          "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071515314737.webp"
+        ],
+        "assets": [
+          {
+            "url": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071515314737.webp",
+            "content_type": "image/png",
+            "width": 1066,
+            "height": 1500,
+            "format": "PNG",
+            "mode": "RGBA",
+            "has_alpha": true,
+            "transparent_bg_percentage": 42.32,
+            "aspect_ratio_decimal": 0.7107,
+            "aspect_ratio_ratio": "1066:1500",
+            "file_size_kb": 1086.03
+          }
+        ]
+      },
+      "back": {
+        "dom_attrs": [
+          "1077x1500"
+        ],
+        "urls": [],
+        "assets": []
+      }
+    }
+  }
+]

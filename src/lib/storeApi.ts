@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Category, Order, OrderStatus, PaymentStatus, Product, ShippingAddressData, StoreSettings, StorefrontBanner } from '../types/database'
+import type { Category, Collection, Order, OrderStatus, PaymentStatus, Product, ShippingAddressData, StoreSettings, StorefrontBanner } from '../types/database'
 
 // Default fallback settings if DB request fails or is pending
 export const DEFAULT_SETTINGS: StoreSettings = {
@@ -91,6 +91,65 @@ export async function getCategories(onlyActive = true, onlyHeader = false): Prom
     throw error
   }
   return data || []
+}
+
+// ─── Collections ───────────────────────────────────────────────────────────
+
+export async function getCollections(onlyActive = true): Promise<Collection[]> {
+  let query = supabase
+    .from('collections')
+    .select('*')
+    .order('display_order', { ascending: true })
+  if (onlyActive) {
+    query = query.eq('is_active', true)
+  }
+  const { data, error } = await query
+  if (error) {
+    console.error('Error fetching collections:', error)
+    return []
+  }
+  return data || []
+}
+
+export async function adminSaveCollection(col: Partial<Collection>): Promise<Collection> {
+  const payload: Record<string, any> = {
+    name: col.name,
+    slug: col.slug,
+    is_active: col.is_active ?? true,
+    display_order: col.display_order ?? 0,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (col.id) {
+    const { data, error } = await supabase
+      .from('collections')
+      .update(payload)
+      .eq('id', col.id)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  } else {
+    const { data, error } = await supabase
+      .from('collections')
+      .insert(payload)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  }
+}
+
+export async function adminDeleteCollection(id: string): Promise<void> {
+  const { error } = await supabase.from('collections').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function adminReorderCollections(orderedIds: string[]): Promise<void> {
+  const updates = orderedIds.map((id, idx) =>
+    supabase.from('collections').update({ display_order: idx, updated_at: new Date().toISOString() }).eq('id', id)
+  )
+  await Promise.all(updates)
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
@@ -429,6 +488,7 @@ export async function adminSaveProduct(
         price: productData.price,
         compare_at_price: productData.compare_at_price || null,
         category_id: productData.category_id || null,
+        collection_id: productData.collection_id || null,
         is_active: productData.is_active ?? true,
         is_featured: productData.is_featured ?? false,
         is_new: productData.is_new ?? false,
@@ -452,6 +512,7 @@ export async function adminSaveProduct(
         price: productData.price,
         compare_at_price: productData.compare_at_price || null,
         category_id: productData.category_id || null,
+        collection_id: productData.collection_id || null,
         is_active: productData.is_active ?? true,
         is_featured: productData.is_featured ?? false,
         is_new: productData.is_new ?? false,
@@ -516,6 +577,7 @@ export async function adminSaveCategory(category: Partial<Category>) {
         is_active: category.is_active ?? true,
         display_order: category.display_order ?? 0,
         show_in_header: category.show_in_header ?? true,
+        crop_settings: category.crop_settings || { x: 0, y: 0, zoom: 1 },
       })
       .select()
       .single()
@@ -532,6 +594,7 @@ export async function adminSaveCategory(category: Partial<Category>) {
         is_active: category.is_active ?? true,
         display_order: category.display_order ?? 0,
         show_in_header: category.show_in_header ?? true,
+        crop_settings: category.crop_settings || { x: 0, y: 0, zoom: 1 },
         updated_at: new Date().toISOString(),
       })
       .eq('id', category.id)
@@ -540,6 +603,18 @@ export async function adminSaveCategory(category: Partial<Category>) {
     if (error) throw error
     return data
   }
+}
+
+export async function adminReorderCategories(orderedIds: string[]): Promise<void> {
+  const updates = orderedIds.map((id, index) =>
+    supabase
+      .from('categories')
+      .update({ display_order: index + 1, updated_at: new Date().toISOString() })
+      .eq('id', id)
+  )
+  const results = await Promise.all(updates)
+  const firstError = results.find((r) => r.error)?.error
+  if (firstError) throw firstError
 }
 
 export async function adminDeleteCategory(id: string): Promise<{ success: boolean; error?: string }> {

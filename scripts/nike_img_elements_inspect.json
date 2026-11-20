@@ -1,0 +1,182 @@
+{
+  "Blazzer": {
+    "0": {
+      "outerHTML": "<img src=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071515248388.webp?height=640&amp;v=1792065611\" width=\"525\" height=\"1500\" alt=\"Blazzer – side\" loading=\"lazy\" decoding=\"async\">",
+      "src": "//nike-makknzjs.myshopify.com/cdn/shop/files/2610071515248388.webp?height=640&v=1792065611",
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071515248388.webp?height=640&v=1792065611",
+      "width": "525",
+      "height": "1500"
+    },
+    "1": {
+      "outerHTML": "<img data-hi=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071514560224.webp?height=1400&amp;v=1792065608\" width=\"923\" height=\"1500\" alt=\"Blazzer – front\" decoding=\"async\" loading=\"lazy\">",
+      "src": null,
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "",
+      "width": "923",
+      "height": "1500"
+    },
+    "name": "Blazzer",
+    "-1": {
+      "outerHTML": "<img src=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071514492742.webp?height=640&amp;v=1792065606\" loading=\"lazy\" data-hi=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071514492742.webp?height=1400&amp;v=1792065606\" width=\"956\" height=\"1500\" alt=\"Blazzer – back\" decoding=\"async\">",
+      "src": "//nike-makknzjs.myshopify.com/cdn/shop/files/2610071514492742.webp?height=640&v=1792065606",
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514492742.webp?height=640&v=1792065606",
+      "width": "956",
+      "height": "1500"
+    }
+  },
+  "Hoodie": {
+    "0": {
+      "outerHTML": "<img src=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071514447647.webp?height=640&amp;v=1792065701\" width=\"459\" height=\"1500\" alt=\"Hoodie – side\" loading=\"lazy\" decoding=\"async\">",
+      "src": "//nike-makknzjs.myshopify.com/cdn/shop/files/2610071514447647.webp?height=640&v=1792065701",
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514447647.webp?height=640&v=1792065701",
+      "width": "459",
+      "height": "1500"
+    },
+    "1": {
+      "outerHTML": "<img src=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071514403809.webp?height=640&amp;v=1792065704\" loading=\"lazy\" data-hi=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071514403809.webp?height=1400&amp;v=1792065704\" width=\"1082\" height=\"1500\" alt=\"Hoodie – front\" decoding=\"async\">",
+      "src": "//nike-makknzjs.myshopify.com/cdn/shop/files/2610071514403809.webp?height=640&v=1792065704",
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071514403809.webp?height=640&v=1792065704",
+      "width": "1082",
+      "height": "1500"
+    },
+    "name": "Hoodie",
+    "-1": {
+      "outerHTML": "<img data-hi=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071514388245.webp?height=1400&amp;v=1792065705\" width=\"1084\" height=\"1500\" alt=\"Hoodie – back\" decoding=\"async\" loading=\"lazy\">",
+      "src": null,
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "",
+      "width": "1084",
+      "height": "1500"
+    }
+  },
+  "Hoodie Black": {
+    "0": {
+      "outerHTML": "<img src=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071101516777.webp?height=640&amp;v=1792065529\" width=\"431\" height=\"1508\" alt=\"Hoodie Black – side\" loading=\"lazy\" decoding=\"async\">",
+      "src": "//nike-makknzjs.myshopify.com/cdn/shop/files/2610071101516777.webp?height=640&v=1792065529",
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071101516777.webp?height=640&v=1792065529",
+      "width": "431",
+      "height": "1508"
+    },
+    "1": {
+      "outerHTML": "<img src=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071101472773.webp?height=640&amp;v=1792065527\" loading=\"lazy\" data-hi=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071101472773.webp?height=1400&amp;v=1792065527\" width=\"1125\" height=\"1508\" alt=\"Hoodie Black – front\" decoding=\"async\">",
+      "src": "//nike-makknzjs.myshopify.com/cdn/shop/files/2610071101472773.webp?height=640&v=1792065527",
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071101472773.webp?height=640&v=1792065527",
+      "width": "1125",
+      "height": "1508"
+    },
+    "name": "Hoodie Black",
+    "-1": {
+      "outerHTML": "<img data-hi=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071101430110.webp?height=1400&amp;v=1792065524\" width=\"1128\" height=\"1508\" alt=\"Hoodie Black – back\" decoding=\"async\" loading=\"lazy\">",
+      "src": null,
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "",
+      "width": "1128",
+      "height": "1508"
+    }
+  },
+  "Sweatshirt": {
+    "0": {
+      "outerHTML": "<img src=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071517384792.webp?height=640&amp;v=1792066083\" width=\"383\" height=\"1500\" alt=\"Sweatshirt – side\" loading=\"lazy\" decoding=\"async\">",
+      "src": "//nike-makknzjs.myshopify.com/cdn/shop/files/2610071517384792.webp?height=640&v=1792066083",
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071517384792.webp?height=640&v=1792066083",
+      "width": "383",
+      "height": "1500"
+    },
+    "1": {
+      "outerHTML": "<img src=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071517318112.webp?height=640&amp;v=1792066085\" loading=\"lazy\" data-hi=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071517318112.webp?height=1400&amp;v=1792066085\" width=\"1033\" height=\"1500\" alt=\"Sweatshirt – front\" decoding=\"async\">",
+      "src": "//nike-makknzjs.myshopify.com/cdn/shop/files/2610071517318112.webp?height=640&v=1792066085",
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071517318112.webp?height=640&v=1792066085",
+      "width": "1033",
+      "height": "1500"
+    },
+    "name": "Sweatshirt",
+    "-1": {
+      "outerHTML": "<img data-hi=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071517292954.webp?height=1400&amp;v=1792066088\" width=\"1035\" height=\"1500\" alt=\"Sweatshirt – back\" decoding=\"async\" loading=\"lazy\">",
+      "src": null,
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "",
+      "width": "1035",
+      "height": "1500"
+    }
+  },
+  "Sweatshirt Plus": {
+    "0": {
+      "outerHTML": "<img src=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071517049148.webp?height=640&amp;v=1792066000\" width=\"501\" height=\"1500\" alt=\"Sweatshirt Plus – side\" loading=\"lazy\" decoding=\"async\">",
+      "src": "//nike-makknzjs.myshopify.com/cdn/shop/files/2610071517049148.webp?height=640&v=1792066000",
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071517049148.webp?height=640&v=1792066000",
+      "width": "501",
+      "height": "1500"
+    },
+    "1": {
+      "outerHTML": "<img src=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071516592552.webp?height=640&amp;v=1792065999\" loading=\"lazy\" data-hi=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071516592552.webp?height=1400&amp;v=1792065999\" width=\"984\" height=\"1500\" alt=\"Sweatshirt Plus – front\" decoding=\"async\">",
+      "src": "//nike-makknzjs.myshopify.com/cdn/shop/files/2610071516592552.webp?height=640&v=1792065999",
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071516592552.webp?height=640&v=1792065999",
+      "width": "984",
+      "height": "1500"
+    },
+    "name": "Sweatshirt Plus",
+    "-1": {
+      "outerHTML": "<img data-hi=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071517017451.webp?height=1400&amp;v=1792065997\" width=\"1067\" height=\"1500\" alt=\"Sweatshirt Plus – back\" decoding=\"async\" loading=\"lazy\">",
+      "src": null,
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "",
+      "width": "1067",
+      "height": "1500"
+    }
+  },
+  "Tshirt": {
+    "0": {
+      "outerHTML": "<img src=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071516549024.webp?height=640&amp;v=1792065933\" width=\"396\" height=\"1500\" alt=\"Tshirt – side\" loading=\"lazy\" decoding=\"async\">",
+      "src": "//nike-makknzjs.myshopify.com/cdn/shop/files/2610071516549024.webp?height=640&v=1792065933",
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071516549024.webp?height=640&v=1792065933",
+      "width": "396",
+      "height": "1500"
+    },
+    "1": {
+      "outerHTML": "<img src=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071515314737.webp?height=640&amp;v=1792065932\" loading=\"lazy\" data-hi=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071515314737.webp?height=1400&amp;v=1792065932\" width=\"1066\" height=\"1500\" alt=\"Tshirt – front\" decoding=\"async\">",
+      "src": "//nike-makknzjs.myshopify.com/cdn/shop/files/2610071515314737.webp?height=640&v=1792065932",
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "https://nike-makknzjs.myshopify.com/cdn/shop/files/2610071515314737.webp?height=640&v=1792065932",
+      "width": "1066",
+      "height": "1500"
+    },
+    "name": "Tshirt",
+    "-1": {
+      "outerHTML": "<img data-hi=\"//nike-makknzjs.myshopify.com/cdn/shop/files/2610071515554298.webp?height=1400&amp;v=1792065930\" width=\"1077\" height=\"1500\" alt=\"Tshirt – back\" decoding=\"async\" loading=\"lazy\">",
+      "src": null,
+      "srcset": null,
+      "dataSrc": null,
+      "currentSrc": "",
+      "width": "1077",
+      "height": "1500"
+    }
+  }
+}

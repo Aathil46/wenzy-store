@@ -20,13 +20,15 @@ export default function Header({ onOpenSearch }: HeaderProps) {
   const [activeTab, setActiveTab] = useState<string>('')
 
   useEffect(() => {
-    getCategories(true, true).then((cats) => {
+    getCategories(true, false).then((cats) => {
       setCategories(cats)
       if (cats.length > 0 && !activeTab) {
         setActiveTab(cats[0].slug)
       }
     })
   }, [])
+
+  const headerNavCategories = categories.filter((cat) => cat.show_in_header ?? true)
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white border-b border-neutral-200">
@@ -46,7 +48,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
 
             {/* Desktop Navigation Tabs from Supabase with Reference Active Indicator */}
             <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-xs font-bold uppercase tracking-wider">
-              {categories.map((cat, idx) => {
+              {headerNavCategories.map((cat, idx) => {
                 const isSelected = activeTab === cat.slug || (!activeTab && idx === 0)
                 return (
                   <Link
@@ -147,9 +149,9 @@ export default function Header({ onOpenSearch }: HeaderProps) {
         </div>
       </div>
 
-      {/* Mobile Navigation Drawer */}
+      {/* Navigation Flyout Drawer (Three Line Icon on Top Left) */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden">
+        <div className="fixed inset-0 z-50 flex">
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
@@ -157,8 +159,8 @@ export default function Header({ onOpenSearch }: HeaderProps) {
           />
 
           {/* Drawer Menu */}
-          <div className="relative w-4/5 max-w-sm bg-white h-full shadow-2xl flex flex-col p-6 animate-slide-in-right">
-            <div className="flex items-center justify-between pb-6 border-b border-neutral-200">
+          <div className="relative w-full max-w-[420px] sm:max-w-[460px] bg-white h-full shadow-2xl flex flex-col p-5 sm:p-6 animate-slide-in-left z-10 overflow-hidden">
+            <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
               <span className="font-heading font-black text-xl tracking-[0.2em] uppercase">
                 WENZY<span className="text-xs align-super ml-0.5 text-red-600">®</span>
               </span>
@@ -171,70 +173,82 @@ export default function Header({ onOpenSearch }: HeaderProps) {
               </button>
             </div>
 
-            <div className="flex-1 py-6 space-y-4 overflow-y-auto">
-              <div className="flex flex-wrap gap-2 pb-4 border-b border-neutral-200 text-center text-xs font-bold uppercase tracking-wider">
-                {categories.map((cat) => (
-                  <Link
-                    key={cat.id}
-                    to={`/category/${cat.slug}`}
-                    onClick={() => {
-                      setActiveTab(cat.slug)
-                      setMobileMenuOpen(false)
-                    }}
-                    className={`px-3 py-2 rounded transition-colors ${
-                      activeTab === cat.slug
-                        ? 'bg-black text-white'
-                        : 'bg-neutral-100 text-neutral-800 hover:bg-neutral-200'
-                    }`}
-                  >
-                    {cat.name}
-                  </Link>
-                ))}
+            <div className="flex-1 py-4 space-y-6 overflow-y-auto pr-1">
+              {/* Categories Section (Small 4:5 frame cards matching reference size) */}
+              <div>
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-neutral-100">
+                  <span className="text-xs font-black uppercase tracking-wider text-neutral-900">
+                    Categories
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5 sm:gap-3">
+                  {categories.map((cat) => {
+                    const crop = cat.crop_settings || { x: 0, y: 0, zoom: 1 }
+                    return (
+                      <Link
+                        key={cat.id}
+                        to={`/category/${cat.slug}`}
+                        onClick={() => {
+                          setActiveTab(cat.slug)
+                          setMobileMenuOpen(false)
+                        }}
+                        className="group flex flex-col items-center text-center"
+                      >
+                        {/* Small frame (approx 78px x 100px 4:5 ratio with rounded corners) */}
+                        <div className="relative w-full aspect-[4/5] max-w-[78px] overflow-hidden bg-neutral-100 rounded-[4px] border border-neutral-200 group-hover:border-black transition-colors shadow-2xs">
+                          {cat.image_url ? (
+                            <img
+                              src={cat.image_url}
+                              alt={cat.name}
+                              style={{
+                                transform: `translate(${crop.x || 0}%, ${crop.y || 0}%) scale(${crop.zoom || 1})`,
+                                transformOrigin: 'center center',
+                              }}
+                              className="w-full h-full object-cover select-none pointer-events-none group-hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-neutral-400 font-bold text-[9px] uppercase tracking-wider bg-neutral-100">
+                              {cat.name.slice(0, 3)}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Category name below frame */}
+                        <span className="text-[10px] sm:text-[11px] font-semibold text-neutral-800 group-hover:text-black leading-tight line-clamp-2 mt-1.5 transition-colors">
+                          {cat.name}
+                        </span>
+                      </Link>
+                    )
+                  })}
+                </div>
               </div>
 
-              <Link
-                to="/shop"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between text-sm font-bold uppercase tracking-[0.16em] py-2 border-b border-neutral-100"
-              >
-                <span>All Products</span>
-                <ArrowRight className="w-4 h-4 text-neutral-400" />
-              </Link>
-
-              {categories.map((cat) => (
+              {/* Navigation Links directly above Brand Story */}
+              <div className="pt-2 border-t border-neutral-200 space-y-1">
                 <Link
-                  key={cat.id}
-                  to={`/category/${cat.slug}`}
+                  to="/about"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-between text-sm font-bold uppercase tracking-[0.16em] py-2 border-b border-neutral-100"
+                  className="block text-xs sm:text-sm font-bold uppercase tracking-[0.16em] py-2.5 text-neutral-800 hover:text-black transition-colors"
                 >
-                  <span>{cat.name}</span>
-                  <ArrowRight className="w-4 h-4 text-neutral-400" />
+                  Brand Story
                 </Link>
-              ))}
-
-              <Link
-                to="/about"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block text-sm font-bold uppercase tracking-[0.16em] py-2 text-neutral-600 hover:text-black"
-              >
-                Brand Story
-              </Link>
-              <Link
-                to="/contact"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block text-sm font-bold uppercase tracking-[0.16em] py-2 text-neutral-600 hover:text-black"
-              >
-                Contact & Support
-              </Link>
+                <Link
+                  to="/contact"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-xs sm:text-sm font-bold uppercase tracking-[0.16em] py-2.5 text-neutral-800 hover:text-black transition-colors"
+                >
+                  Contact & Support
+                </Link>
+              </div>
             </div>
 
-            <div className="pt-6 border-t border-neutral-200 space-y-3">
+            <div className="pt-4 border-t border-neutral-200 space-y-3">
               {isAdmin && (
                 <Link
                   to="/admin"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full py-3 bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded"
+                  className="flex items-center justify-center gap-2 w-full py-2.5 bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded"
                 >
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   Admin Dashboard
@@ -244,7 +258,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
               <Link
                 to={user ? '/account' : '/login'}
                 onClick={() => setMobileMenuOpen(false)}
-                className="btn-secondary w-full text-center"
+                className="btn-secondary w-full text-center py-2.5 text-xs"
               >
                 {user ? 'My Account' : 'Sign In / Register'}
               </Link>

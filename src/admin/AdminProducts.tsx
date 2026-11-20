@@ -19,17 +19,19 @@ import {
 import {
   adminGetProducts,
   getCategories,
+  getCollections,
   adminSaveProduct,
   adminDeleteProduct,
   uploadImageToStorage,
 } from '../lib/storeApi'
-import type { Category, Product, ProductImage, ProductVariant } from '../types/database'
+import type { Category, Collection, Product, ProductImage, ProductVariant } from '../types/database'
 
 const DEFAULT_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL']
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [collections, setCollections] = useState<Collection[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [rackFilter, setRackFilter] = useState<'all' | 'rack'>('all')
@@ -48,6 +50,7 @@ export default function AdminProducts() {
     price: 999,
     compare_at_price: 1799,
     category_id: '',
+    collection_id: '',
     is_active: true,
     is_featured: false,
     is_new: true,
@@ -78,9 +81,10 @@ export default function AdminProducts() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [prods, cats] = await Promise.all([adminGetProducts(), getCategories(false)])
+      const [prods, cats, cols] = await Promise.all([adminGetProducts(), getCategories(false), getCollections(false)])
       setProducts(prods)
       setCategories(cats)
+      setCollections(cols)
     } catch (err) {
       console.error('Failed to load products:', err)
     } finally {
@@ -101,6 +105,7 @@ export default function AdminProducts() {
       price: 0,
       compare_at_price: 0,
       category_id: categories[0]?.id || '',
+      collection_id: '',
       is_active: true,
       is_featured: false,
       is_new: true,
@@ -137,6 +142,7 @@ export default function AdminProducts() {
       price: prod.price,
       compare_at_price: prod.compare_at_price || 0,
       category_id: prod.category_id || '',
+      collection_id: prod.collection_id || '',
       is_active: prod.is_active,
       is_featured: prod.is_featured,
       is_new: prod.is_new,
@@ -348,6 +354,7 @@ export default function AdminProducts() {
           price: Number(formData.price),
           compare_at_price: Number(formData.compare_at_price) || null,
           category_id: formData.category_id || null,
+          collection_id: formData.collection_id || null,
           is_active: formData.is_active,
           is_featured: formData.is_featured,
           is_new: formData.is_new,
@@ -406,6 +413,7 @@ export default function AdminProducts() {
         price: prod.price,
         compare_at_price: prod.compare_at_price || null,
         category_id: prod.category_id || null,
+        collection_id: prod.collection_id || null,
         is_active: prod.is_active,
         is_featured: prod.is_featured,
         is_new: true,
@@ -795,6 +803,27 @@ export default function AdminProducts() {
                         className="input-field font-mono"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-neutral-600 uppercase font-bold text-[10px] mb-1">
+                      Collection (Homepage Filter Tab)
+                    </label>
+                    <select
+                      value={formData.collection_id}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, collection_id: e.target.value }))}
+                      className="input-field cursor-pointer"
+                    >
+                      <option value="">No Collection</option>
+                      {collections.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} {c.is_active ? '' : '(Hidden)'}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-neutral-400 mt-1">
+                      Assigns this product to a homepage filter tab (Shop the Edit section).
+                    </p>
                   </div>
 
                   <div>

@@ -10,6 +10,12 @@ export interface Profile {
   updated_at: string
 }
 
+export interface CategoryCropSettings {
+  x: number
+  y: number
+  zoom: number
+}
+
 export interface Category {
   id: string
   name: string
@@ -19,6 +25,7 @@ export interface Category {
   is_active: boolean
   display_order: number
   show_in_header?: boolean
+  crop_settings?: CategoryCropSettings | null
   created_at: string
   updated_at: string
   // Virtual count computed or joined
@@ -58,6 +65,21 @@ export interface ProductVariant {
   updated_at: string
 }
 
+// ============================================================
+// Collections (Subcategory filter sections on homepage)
+// ============================================================
+export interface Collection {
+  id: string
+  name: string
+  slug: string
+  display_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  // Virtual — joined products
+  products?: Product[]
+}
+
 export interface Product {
   id: string
   name: string
@@ -66,6 +88,7 @@ export interface Product {
   price: number
   compare_at_price?: number | null
   category_id?: string | null
+  collection_id?: string | null
   is_active: boolean
   is_featured: boolean
   is_new: boolean
@@ -76,6 +99,7 @@ export interface Product {
   updated_at: string
   // Joined fields
   category?: Category | null
+  collection?: Collection | null
   images?: ProductImage[]
   variants?: ProductVariant[]
 }
