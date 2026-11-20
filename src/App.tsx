@@ -26,6 +26,7 @@ import AdminCustomers from './admin/AdminCustomers'
 import AdminSettings from './admin/AdminSettings'
 import AdminBanners from './admin/AdminBanners'
 import AdminCollections from './admin/AdminCollections'
+import AdminReviews from './admin/AdminReviews'
 
 export default function App() {
   return (
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="products" element={<AdminProducts />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="collections" element={<AdminCollections />} />
+            <Route path="reviews" element={<AdminReviews />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="settings" element={<AdminSettings />} />

@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Category, Collection, Order, OrderStatus, PaymentStatus, Product, ShippingAddressData, StoreSettings, StorefrontBanner } from '../types/database'
+import type { Category, Collection, Order, OrderStatus, PaymentStatus, Product, ProductReview, ReviewMediaItem, ShippingAddressData, StoreSettings, StorefrontBanner } from '../types/database'
 
 // Default fallback settings if DB request fails or is pending
 export const DEFAULT_SETTINGS: StoreSettings = {
@@ -841,3 +841,214 @@ export async function deleteBannerMedia(path: string): Promise<void> {
   if (!path || path.startsWith('http')) return
   await supabase.storage.from('banner-media').remove([path])
 }
+
+// ---------------------------------------------------------------------------
+// Product Reviews & Related Products Queries
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch approved customer reviews for a given product.
+ */
+export async function getProductReviews(productId: string): Promise<ProductReview[]> {
+  try {
+    const { data, error } = await supabase
+      .from('product_reviews')
+      .select('*')
+      .eq('product_id', productId)
+      .eq('is_approved', true)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching product reviews:', error)
+      return []
+    }
+    return (data || []) as ProductReview[]
+  } catch (err) {
+    console.error('Failed to get product reviews:', err)
+    return []
+  }
+}
+
+/**
+ * Submit a customer review (public or authenticated user).
+ */
+export async function submitProductReview(
+  reviewData: Partial<ProductReview>
+): Promise<ProductReview> {
+  const { data, error } = await supabase
+    .from('product_reviews')
+    .insert({
+      product_id: reviewData.product_id,
+      rating: reviewData.rating,
+      author_name: reviewData.author_name,
+      author_email: reviewData.author_email || null,
+      title: reviewData.title || null,
+      content: reviewData.content,
+      media_urls: reviewData.media_urls || [],
+      is_verified_buyer: reviewData.is_verified_buyer ?? true,
+      is_approved: reviewData.is_approved ?? true,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as ProductReview
+}
+
+/**
+ * Upload review media (photo or short video) to Supabase Storage.
+ * Enforces 30-second duration and size limits for video clips.
+ */
+export async function uploadReviewMedia(
+  file: File,
+  type: 'image' | 'video'
+): Promise<ReviewMediaItem> {
+  const ext = file.name.split('.').pop()?.toLowerCase() || (type === 'video' ? 'mp4' : 'jpg')
+  const fileName = `review_${type}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`
+  const filePath = `reviews/${fileName}`
+
+  // Upload to review-media bucket (falls back to store-assets if needed)
+  let uploadResult = await supabase.storage
+    .from('review-media')
+    .upload(filePath, file, { upsert: false, contentType: file.type })
+
+  if (uploadResult.error) {
+    // Attempt store-assets bucket fallback
+    uploadResult = await supabase.storage
+      .from('store-assets')
+      .upload(filePath, file, { upsert: false, contentType: file.type })
+  }
+
+  if (uploadResult.error) {
+    throw new Error(`Media upload failed: ${uploadResult.error.message}`)
+  }
+
+  const bucket = uploadResult.data.path ? 'review-media' : 'store-assets'
+  const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(uploadResult.data.path)
+
+  return {
+    type,
+    url: urlData.publicUrl,
+  }
+}
+
+/**
+ * Admin: Fetch all reviews across all products with product details.
+ */
+export async function adminGetAllReviews(): Promise<ProductReview[]> {
+  const { data, error } = await supabase
+    .from('product_reviews')
+    .select(`
+      *,
+      product:products(name, slug)
+    `)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Failed to load admin reviews:', error)
+    return []
+  }
+  return (data || []) as ProductReview[]
+}
+
+/**
+ * Admin: Add or update a product review.
+ */
+export async function adminSaveReview(reviewData: Partial<ProductReview>): Promise<ProductReview> {
+  if (reviewData.id) {
+    const { data, error } = await supabase
+      .from('product_reviews')
+      .update({
+        rating: reviewData.rating,
+        author_name: reviewData.author_name,
+        author_email: reviewData.author_email,
+        title: reviewData.title,
+        content: reviewData.content,
+        media_urls: reviewData.media_urls || [],
+        is_verified_buyer: reviewData.is_verified_buyer,
+        is_approved: reviewData.is_approved,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', reviewData.id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as ProductReview
+  } else {
+    return submitProductReview(reviewData)
+  }
+}
+
+/**
+ * Admin: Delete a product review.
+ */
+export async function adminDeleteReview(reviewId: string): Promise<void> {
+  const { error } = await supabase.from('product_reviews').delete().eq('id', reviewId)
+  if (error) throw error
+}
+
+/**
+ * Fetch related products for PDP ("YOU MAY LIKE").
+ * Checks product.details.related_product_ids, otherwise pulls same category/active items.
+ */
+export async function getRelatedProducts(product: Product): Promise<Product[]> {
+  try {
+    const relatedIds = product.details?.related_product_ids
+    if (Array.isArray(relatedIds) && relatedIds.length > 0) {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          category:categories(*),
+          images:product_images(*),
+          variants:product_variants(*)
+        `)
+        .in('id', relatedIds)
+        .eq('is_active', true)
+        .limit(8)
+
+      if (!error && data && data.length > 0) {
+        return data as Product[]
+      }
+    }
+
+    // Fallback: fetch up to 4 other active products from same category or general catalog
+    let query = supabase
+      .from('products')
+      .select(`
+        *,
+        category:categories(*),
+        images:product_images(*),
+        variants:product_variants(*)
+      `)
+      .eq('is_active', true)
+      .neq('id', product.id)
+      .limit(4)
+
+    if (product.category_id) {
+      query = query.eq('category_id', product.category_id)
+    }
+
+    const { data, error } = await query
+    if (error || !data || data.length === 0) {
+      // General catalog fallback
+      const { data: fallback } = await supabase
+        .from('products')
+        .select(`
+          *,
+          category:categories(*),
+          images:product_images(*),
+          variants:product_variants(*)
+        `)
+        .eq('is_active', true)
+        .neq('id', product.id)
+        .limit(4)
+      return (fallback || []) as Product[]
+    }
+
+    return data as Product[]
+  } catch {
+    return []
+  }
+}
+

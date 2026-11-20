@@ -32,12 +32,55 @@ export interface Category {
   product_count?: number
 }
 
+export interface ColorVariant {
+  name: string
+  hex: string
+  product_id?: string
+  slug?: string
+}
+
+export interface TrustCard {
+  icon: string
+  title: string
+  subtitle?: string
+}
+
 export interface ProductDetails {
   fabric?: string
   gsm?: number
   fit?: string
   care?: string
+  subtitle?: string
+  color_variants?: ColorVariant[]
+  trust_cards?: TrustCard[]
+  size_guide_image?: string
+  return_policy?: string
+  shipping_info?: string
+  related_products_title?: string
+  related_product_ids?: string[]
   [key: string]: any
+}
+
+export interface ReviewMediaItem {
+  type: 'image' | 'video'
+  url: string
+}
+
+export interface ProductReview {
+  id: string
+  product_id: string
+  rating: number
+  author_name: string
+  author_email?: string | null
+  title?: string | null
+  content: string
+  media_urls?: ReviewMediaItem[]
+  is_verified_buyer: boolean
+  is_approved: boolean
+  helpful_count?: number
+  created_at: string
+  updated_at: string
+  product?: { name: string; slug: string } | null
 }
 
 export type ProductImageViewType = 'standard' | 'side' | 'front' | 'back' | 'detail'

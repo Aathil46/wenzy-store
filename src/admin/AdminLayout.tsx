@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   AlertTriangle,
   Image as ImageIcon,
+  MessageSquare,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -65,6 +66,7 @@ export default function AdminLayout() {
     { label: 'Products & WENZY RACK', path: '/admin/products', icon: Package },
     { label: 'Categories', path: '/admin/categories', icon: Layers },
     { label: 'Collections', path: '/admin/collections', icon: FolderOpen },
+    { label: 'Reviews', path: '/admin/reviews', icon: MessageSquare },
     { label: 'Orders', path: '/admin/orders', icon: ShoppingBag },
     { label: 'Customers', path: '/admin/customers', icon: Users },
     { label: 'Store Settings', path: '/admin/settings', icon: Settings },

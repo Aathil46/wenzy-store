@@ -24,7 +24,7 @@ import {
   adminDeleteProduct,
   uploadImageToStorage,
 } from '../lib/storeApi'
-import type { Category, Collection, Product, ProductImage, ProductVariant } from '../types/database'
+import type { Category, Collection, Product, ProductImage, ProductVariant, ColorVariant } from '../types/database'
 
 const DEFAULT_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL']
 
@@ -78,6 +78,18 @@ export default function AdminProducts() {
     { size: string; color: string; sku?: string; stock_quantity: number }[]
   >([])
 
+  // Additional PDP Customization Fields
+  const [subtitle, setSubtitle] = useState('')
+  const [colorVariants, setColorVariants] = useState<ColorVariant[]>([])
+  const [newColorName, setNewColorName] = useState('')
+  const [newColorHex, setNewColorHex] = useState('#000000')
+  const [newColorSlug, setNewColorSlug] = useState('')
+  const [sizeGuideImage, setSizeGuideImage] = useState('')
+  const [returnPolicy, setReturnPolicy] = useState('')
+  const [shippingInfo, setShippingInfo] = useState('')
+  const [relatedProductsTitle, setRelatedProductsTitle] = useState('YOU MAY LIKE')
+  const [selectedRelatedIds, setSelectedRelatedIds] = useState<string[]>([])
+
   const loadData = async () => {
     setLoading(true)
     try {
@@ -129,6 +141,16 @@ export default function AdminProducts() {
         stock_quantity: 0,
       }))
     )
+    setSubtitle('')
+    setColorVariants([])
+    setNewColorName('')
+    setNewColorHex('#000000')
+    setNewColorSlug('')
+    setSizeGuideImage('')
+    setReturnPolicy('')
+    setShippingInfo('')
+    setRelatedProductsTitle('YOU MAY LIKE')
+    setSelectedRelatedIds([])
     setErrorMsg('')
     setModalOpen(true)
   }
@@ -181,6 +203,16 @@ export default function AdminProducts() {
           }))
         : DEFAULT_SIZES.map((s) => ({ size: s, color: 'Black', sku: `${prod.slug}-${s}`, stock_quantity: 10 }))
     )
+    setSubtitle(prod.details?.subtitle || '')
+    setColorVariants(prod.details?.color_variants || [])
+    setNewColorName('')
+    setNewColorHex('#000000')
+    setNewColorSlug('')
+    setSizeGuideImage(prod.details?.size_guide_image || '')
+    setReturnPolicy(prod.details?.return_policy || '')
+    setShippingInfo(prod.details?.shipping_info || '')
+    setRelatedProductsTitle(prod.details?.related_products_title || 'YOU MAY LIKE')
+    setSelectedRelatedIds(prod.details?.related_product_ids || [])
     setErrorMsg('')
     setModalOpen(true)
   }
@@ -390,6 +422,13 @@ export default function AdminProducts() {
             gsm: Number(formData.gsm),
             fit: formData.fit,
             care: formData.care,
+            subtitle: subtitle.trim() || undefined,
+            color_variants: colorVariants.length > 0 ? colorVariants : undefined,
+            size_guide_image: sizeGuideImage.trim() || undefined,
+            return_policy: returnPolicy.trim() || undefined,
+            shipping_info: shippingInfo.trim() || undefined,
+            related_products_title: relatedProductsTitle.trim() || 'YOU MAY LIKE',
+            related_product_ids: selectedRelatedIds.length > 0 ? selectedRelatedIds : undefined,
           },
         },
         allImagesToSave,
@@ -826,6 +865,19 @@ export default function AdminProducts() {
                         onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
                         placeholder="oversized-graphic-t-shirt"
                         className="input-field font-mono"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-neutral-600 uppercase font-bold text-[10px] mb-1">
+                        Subtitle / Tagline (Optional non-bold text displayed under product name on PDP)
+                      </label>
+                      <input
+                        type="text"
+                        value={subtitle}
+                        onChange={(e) => setSubtitle(e.target.value)}
+                        placeholder="e.g. Heavyweight drop-shoulder graphic tee in custom-milled French Terry"
+                        className="input-field"
                       />
                     </div>
                   </div>
@@ -1358,6 +1410,232 @@ export default function AdminProducts() {
                         />
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* 1. Color Variants Section (Linked with products by admin, matching Image 3) */}
+                <div className="space-y-3 pt-3 border-t border-neutral-200">
+                  <div>
+                    <div className="font-bold uppercase tracking-wider text-black">
+                      Color Swatches & Linked Products
+                    </div>
+                    <p className="text-[10px] text-neutral-500">
+                      Displays interactive circular color swatches on the PDP. When clicked, navigates to the linked product.
+                    </p>
+                  </div>
+
+                  {/* Add Swatch */}
+                  <div className="flex flex-wrap items-end gap-2 bg-neutral-50 p-3 border border-neutral-200 rounded">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-neutral-600 mb-1">Color Name</label>
+                      <input
+                        type="text"
+                        value={newColorName}
+                        onChange={(e) => setNewColorName(e.target.value)}
+                        placeholder="e.g. Black"
+                        className="w-28 px-2 py-1 text-xs border border-neutral-300 rounded bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-neutral-600 mb-1">Color Hex</label>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="color"
+                          value={newColorHex}
+                          onChange={(e) => setNewColorHex(e.target.value)}
+                          className="w-7 h-7 p-0 border border-neutral-300 rounded cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={newColorHex}
+                          onChange={(e) => setNewColorHex(e.target.value)}
+                          className="w-20 px-2 py-1 text-xs border border-neutral-300 rounded bg-white font-mono"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-[140px]">
+                      <label className="block text-[10px] font-bold uppercase text-neutral-600 mb-1">Linked Product</label>
+                      <select
+                        value={newColorSlug}
+                        onChange={(e) => setNewColorSlug(e.target.value)}
+                        className="w-full px-2 py-1 text-xs border border-neutral-300 rounded bg-white"
+                      >
+                        <option value="">Select product to link...</option>
+                        {products.map((p) => (
+                          <option key={p.id} value={p.slug}>
+                            {p.name} ({p.slug})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!newColorName.trim()) return
+                        setColorVariants((prev) => [
+                          ...prev,
+                          {
+                            name: newColorName.trim(),
+                            hex: newColorHex,
+                            slug: newColorSlug || formData.slug,
+                          },
+                        ])
+                        setNewColorName('')
+                      }}
+                      className="px-3 py-1.5 bg-black text-white rounded text-xs font-bold uppercase tracking-wider hover:bg-neutral-800"
+                    >
+                      Add Swatch
+                    </button>
+                  </div>
+
+                  {/* Existing Swatches */}
+                  {colorVariants.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {colorVariants.map((col, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2 bg-white px-3 py-1.5 border border-neutral-300 rounded shadow-xs"
+                        >
+                          <span
+                            className="w-4 h-4 rounded-full border border-neutral-400"
+                            style={{ backgroundColor: col.hex }}
+                          />
+                          <span className="font-bold text-xs">{col.name}</span>
+                          {col.slug && (
+                            <span className="text-[10px] text-neutral-400 font-mono">→ {col.slug}</span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setColorVariants((prev) => prev.filter((_, i) => i !== idx))}
+                            className="text-neutral-400 hover:text-red-600 ml-1"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. PDP Accordion Details (Matching Image 1: Size Guide, Return Policy, Shipping) */}
+                <div className="space-y-3 pt-3 border-t border-neutral-200">
+                  <div className="font-bold uppercase tracking-wider text-black">
+                    PDP Accordion Sections (Size Guide, Policies)
+                  </div>
+
+                  <div>
+                    <label className="block text-neutral-600 uppercase font-bold text-[10px] mb-1">
+                      Size Guide Image URL (or upload custom chart)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={sizeGuideImage}
+                        onChange={(e) => setSizeGuideImage(e.target.value)}
+                        placeholder="https://... or leave empty for default WENZY chart"
+                        className="input-field flex-1"
+                      />
+                      <label className="btn-secondary text-[11px] flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload Chart</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const f = e.target.files?.[0]
+                            if (f) {
+                              try {
+                                const res = await uploadImageToStorage(f, 'product-images')
+                                if (res.url) setSizeGuideImage(res.url)
+                              } catch (err: any) {
+                                alert(`Upload failed: ${err.message}`)
+                              }
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-neutral-600 uppercase font-bold text-[10px] mb-1">
+                        Return Policy Custom Text
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={returnPolicy}
+                        onChange={(e) => setReturnPolicy(e.target.value)}
+                        placeholder="Leave blank for standard 7-day hassle-free exchange policy..."
+                        className="w-full border border-neutral-300 p-2 text-xs outline-none focus:border-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-neutral-600 uppercase font-bold text-[10px] mb-1">
+                        Shipping Information Custom Text
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={shippingInfo}
+                        onChange={(e) => setShippingInfo(e.target.value)}
+                        placeholder="Leave blank for standard 24-48h dispatch & 2-4 day express delivery..."
+                        className="w-full border border-neutral-300 p-2 text-xs outline-none focus:border-black"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Related Products ("YOU MAY LIKE") */}
+                <div className="space-y-3 pt-3 border-t border-neutral-200">
+                  <div className="font-bold uppercase tracking-wider text-black">
+                    Related Products Section
+                  </div>
+
+                  <div>
+                    <label className="block text-neutral-600 uppercase font-bold text-[10px] mb-1">
+                      Section Title
+                    </label>
+                    <input
+                      type="text"
+                      value={relatedProductsTitle}
+                      onChange={(e) => setRelatedProductsTitle(e.target.value)}
+                      placeholder="e.g. YOU MAY LIKE"
+                      className="input-field"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-neutral-600 uppercase font-bold text-[10px] mb-1">
+                      Choose Recommended Products (Optional — defaults to same category)
+                    </label>
+                    <div className="max-h-40 overflow-y-auto border border-neutral-200 rounded p-2 grid grid-cols-1 sm:grid-cols-2 gap-2 bg-neutral-50">
+                      {products
+                        .filter((p) => p.id !== editingProduct?.id)
+                        .map((p) => {
+                          const isChecked = selectedRelatedIds.includes(p.id)
+                          return (
+                            <label
+                              key={p.id}
+                              className="flex items-center gap-2 p-1.5 bg-white border border-neutral-200 rounded cursor-pointer hover:border-black text-xs"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedRelatedIds((prev) => [...prev, p.id])
+                                  } else {
+                                    setSelectedRelatedIds((prev) => prev.filter((id) => id !== p.id))
+                                  }
+                                }}
+                                className="rounded text-black focus:ring-black"
+                              />
+                              <span className="font-bold truncate">{p.name}</span>
+                            </label>
+                          )
+                        })}
+                    </div>
                   </div>
                 </div>
 
