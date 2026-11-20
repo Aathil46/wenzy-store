@@ -106,13 +106,7 @@ function ProductCard({ product }: { product: Product }) {
           </div>
         )}
 
-        {/* Fit Badge (Top-Left matching reference) */}
-        <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-xs text-white text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-xs flex items-center gap-1 shadow-xs">
-          <span className="text-neutral-400">|</span>
-          <span>{fitBadge}</span>
-        </div>
-
-        {/* Wishlist Heart Icon (Top-Right matching reference) */}
+        {/* Wishlist Heart Icon (Top-Right) */}
         <button
           type="button"
           onClick={(e) => {
@@ -129,11 +123,6 @@ function ProductCard({ product }: { product: Product }) {
         >
           <Heart className={`w-3.5 h-3.5 ${wishlisted ? 'fill-current' : ''}`} />
         </button>
-
-        {/* Fabric / Weight Spec Badge (Bottom-Left matching reference) */}
-        <div className="absolute bottom-2 left-2 bg-black/80 backdrop-blur-xs text-white text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 max-w-[85%] truncate rounded-xs shadow-xs">
-          {fabricBadge}
-        </div>
       </div>
 
       {/* 2. Product Information Details */}

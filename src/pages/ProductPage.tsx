@@ -174,13 +174,13 @@ export default function ProductPage() {
         {/* ============================================================== */}
         {/* LEFT COLUMN: PRODUCT IMAGES                                    */}
         {/* Mobile: Swipeable touch carousel with dots indicator            */}
-        {/* Desktop: Vertical stacked scrollable images                    */}
+        {/* Desktop: Primary image with selectable thumbnails on left      */}
         {/* ============================================================== */}
         <div className="lg:col-span-7 w-full">
           
           {/* MOBILE VIEW (< lg): Horizontal swipe carousel with dots indicator */}
           <div className="block lg:hidden relative w-full">
-            {/* Swipeable image container */}
+            {/* Swipeable image container (frame only, no text overlays) */}
             <div
               ref={mobileCarouselRef}
               onScroll={handleMobileScroll}
@@ -191,7 +191,7 @@ export default function ProductPage() {
                 catalogImages.map((img, idx) => (
                   <div
                     key={img.id || idx}
-                    className="w-full shrink-0 snap-center relative aspect-[3/4] overflow-hidden"
+                    className="w-full shrink-0 snap-center relative aspect-[3/4] overflow-hidden rounded-lg border border-neutral-200"
                   >
                     <img
                       src={img.image_url}
@@ -199,20 +199,10 @@ export default function ProductPage() {
                       className="w-full h-full object-cover object-top"
                       loading={idx === 0 ? 'eager' : 'lazy'}
                     />
-                    {hasDiscount && idx === 0 && (
-                      <span className="absolute top-3 left-3 badge-sale text-[10px] py-1 px-2">
-                        {discountPercent}% OFF
-                      </span>
-                    )}
-                    {product.details?.fit && idx === 0 && (
-                      <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-xs text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow-xs">
-                        {product.details.fit}
-                      </div>
-                    )}
                   </div>
                 ))
               ) : (
-                <div className="w-full aspect-[3/4] bg-neutral-100 flex items-center justify-center text-neutral-400 text-xs font-mono">
+                <div className="w-full aspect-[3/4] bg-neutral-100 flex items-center justify-center text-neutral-400 text-xs font-mono rounded-lg">
                   NO IMAGE
                 </div>
               )}
@@ -241,37 +231,36 @@ export default function ProductPage() {
             )}
           </div>
 
-          {/* DESKTOP VIEW (>= lg): Scrollable stacked list of images */}
-          <div className="hidden lg:flex flex-col gap-5">
-            {catalogImages.length > 0 ? (
-              catalogImages.map((img, idx) => (
-                <div
-                  key={img.id || idx}
-                  className="relative w-full aspect-[3/4] bg-neutral-100 overflow-hidden rounded-md border border-neutral-200 group"
-                >
-                  <img
-                    src={img.image_url}
-                    alt={img.alt_text || `${product.name} view ${idx + 1}`}
-                    className="w-full h-full object-cover object-top group-hover:scale-102 transition-transform duration-500 ease-out"
-                    loading={idx === 0 ? 'eager' : 'lazy'}
-                  />
-                  {hasDiscount && idx === 0 && (
-                    <span className="absolute top-4 left-4 badge-sale">
-                      {discountPercent}% OFF
-                    </span>
-                  )}
-                  {product.details?.fit && idx === 0 && (
-                    <div className="absolute top-4 right-4 bg-black/85 backdrop-blur-xs text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded shadow-xs">
-                      {product.details.fit}
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="w-full aspect-[3/4] bg-neutral-100 flex items-center justify-center text-neutral-400 text-xs font-mono rounded-md">
-                NO IMAGE
+          {/* DESKTOP VIEW (>= lg): Selectable thumbnails on the left + Main primary image on the right (Frame only) */}
+          <div className="hidden lg:flex flex-row gap-4">
+            {/* Selectable Thumbnails on the left */}
+            {catalogImages.length > 1 && (
+              <div className="flex flex-col gap-3 shrink-0 overflow-y-auto max-h-[85vh] scrollbar-none pr-1">
+                {catalogImages.map((img, idx) => (
+                  <button
+                    key={img.id || idx}
+                    type="button"
+                    onClick={() => setSelectedImage(img.image_url)}
+                    className={`w-20 h-24 bg-neutral-100 rounded overflow-hidden border transition-all ${
+                      (selectedImage || catalogImages[0]?.image_url) === img.image_url
+                        ? 'border-black ring-1 ring-black'
+                        : 'border-neutral-200 hover:border-neutral-400 opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={img.image_url} alt="" className="w-full h-full object-cover object-top" />
+                  </button>
+                ))}
               </div>
             )}
+
+            {/* Main Single Display Image (Frame only, no text overlays) */}
+            <div className="flex-1 aspect-[3/4] bg-neutral-100 overflow-hidden rounded-md border border-neutral-200 relative group">
+              <img
+                src={selectedImage || catalogImages[0]?.image_url || '/assets/wenzy_front_texture.png'}
+                alt={product.name}
+                className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+              />
+            </div>
           </div>
 
         </div>
