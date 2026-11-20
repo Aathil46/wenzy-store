@@ -263,12 +263,37 @@ export default function AdminProducts() {
   }
 
   const handleSetPrimaryImage = (index: number) => {
-    setImages((prev) =>
-      prev.map((img, i) => ({
+    setImages((prev) => {
+      if (index === 0) return prev
+      const item = prev[index]
+      const remaining = prev.filter((_, i) => i !== index)
+      const reordered = [{ ...item, is_primary: true }, ...remaining.map(img => ({ ...img, is_primary: false }))]
+      return reordered
+    })
+  }
+
+  const handleSetHoverImage = (index: number) => {
+    setImages((prev) => {
+      if (index === 1 || prev.length < 2) return prev
+      const item = prev[index]
+      const remaining = prev.filter((_, i) => i !== index)
+      // keep index 0 as primary, place item at index 1 as hover transition image
+      return [remaining[0], { ...item, is_primary: false }, ...remaining.slice(1).map(img => ({ ...img, is_primary: false }))]
+    })
+  }
+
+  const handleMoveImage = (fromIndex: number, toIndex: number) => {
+    setImages((prev) => {
+      if (toIndex < 0 || toIndex >= prev.length) return prev
+      const updated = [...prev]
+      const [moved] = updated.splice(fromIndex, 1)
+      updated.splice(toIndex, 0, moved)
+      // Ensure first image is marked primary
+      return updated.map((img, idx) => ({
         ...img,
-        is_primary: i === index,
+        is_primary: idx === 0,
       }))
-    )
+    })
   }
 
   const handleVariantStockChange = (index: number, stock: number) => {
@@ -1212,24 +1237,77 @@ export default function AdminProducts() {
 
                   <div className="flex flex-wrap gap-3">
                     {images.map((img, idx) => (
-                      <div key={idx} className="relative w-20 h-24 bg-neutral-100 border border-neutral-300 overflow-hidden group">
-                        <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+                      <div key={idx} className="relative w-28 h-36 bg-neutral-100 border border-neutral-300 rounded overflow-hidden group flex flex-col justify-between">
+                        <img src={img.image_url} alt="" className="w-full h-24 object-cover" />
+                        
+                        {/* Remove button */}
                         <button
                           type="button"
                           onClick={() => handleRemoveImage(idx)}
-                          className="absolute top-1 right-1 bg-black text-white p-1 rounded-full opacity-80 hover:opacity-100"
+                          className="absolute top-1 right-1 bg-black/80 hover:bg-black text-white p-1 rounded-full opacity-80 hover:opacity-100 transition-opacity"
                         >
                           <X className="w-3 h-3" />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSetPrimaryImage(idx)}
-                          className={`absolute bottom-0 inset-x-0 py-0.5 text-[8px] font-bold uppercase text-center ${
-                            img.is_primary ? 'bg-black text-white' : 'bg-white/80 text-black hover:bg-black hover:text-white'
-                          }`}
-                        >
-                          {img.is_primary ? 'Primary' : 'Make Primary'}
-                        </button>
+
+                        {/* Badges for Primary and Hover Alternate */}
+                        <div className="absolute top-1 left-1 flex flex-col gap-1">
+                          {idx === 0 && (
+                            <span className="bg-black text-white text-[8px] font-black uppercase px-1.5 py-0.5 rounded shadow-xs">
+                              1. Primary
+                            </span>
+                          )}
+                          {idx === 1 && (
+                            <span className="bg-emerald-700 text-white text-[8px] font-black uppercase px-1.5 py-0.5 rounded shadow-xs">
+                              2. Hover View
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="bg-neutral-50 border-t border-neutral-200 p-1 flex items-center justify-between text-[8px] font-bold">
+                          <button
+                            type="button"
+                            onClick={() => handleSetPrimaryImage(idx)}
+                            className={`px-1.5 py-0.5 rounded transition-colors ${
+                              idx === 0
+                                ? 'bg-black text-white font-black'
+                                : 'text-neutral-600 hover:text-black hover:bg-neutral-200'
+                            }`}
+                          >
+                            {idx === 0 ? 'Primary' : 'Make Primary'}
+                          </button>
+                          {images.length > 1 && idx !== 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleSetHoverImage(idx)}
+                              className="px-1.5 py-0.5 text-neutral-600 hover:text-emerald-700 hover:bg-neutral-200 rounded transition-colors"
+                            >
+                              Make Hover
+                            </button>
+                          )}
+                          <div className="flex gap-1 ml-auto">
+                            {idx > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => handleMoveImage(idx, idx - 1)}
+                                className="px-1 text-neutral-500 hover:text-black font-mono font-bold"
+                                title="Move left"
+                              >
+                                ←
+                              </button>
+                            )}
+                            {idx < images.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleMoveImage(idx, idx + 1)}
+                                className="px-1 text-neutral-500 hover:text-black font-mono font-bold"
+                                title="Move right"
+                              >
+                                →
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>

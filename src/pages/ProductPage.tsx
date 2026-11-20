@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   ShieldCheck,
@@ -10,7 +10,8 @@ import {
   Minus,
   Check,
   Loader2,
-  Share2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { getProductBySlug, getProducts } from '../lib/storeApi'
@@ -31,6 +32,10 @@ export default function ProductPage() {
   const [addedAnimation, setAddedAnimation] = useState(false)
   const [showStickyBar, setShowStickyBar] = useState(false)
 
+  // Mobile image carousel state
+  const [mobileActiveIndex, setMobileActiveIndex] = useState(0)
+  const mobileCarouselRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     if (!slug) return
     setLoading(true)
@@ -40,6 +45,7 @@ export default function ProductPage() {
         if (prod) {
           const primary = prod.images?.find((img) => img.is_primary)?.image_url || prod.images?.[0]?.image_url || ''
           setSelectedImage(primary)
+          setMobileActiveIndex(0)
           const firstInStock = prod.variants?.find((v) => v.stock_quantity > 0) || prod.variants?.[0] || null
           setSelectedVariant(firstInStock)
 
@@ -58,6 +64,35 @@ export default function ProductPage() {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [slug])
+
+  // Get display catalog images (sorted by display_order)
+  const catalogImages = useMemo(() => {
+    if (!product || !product.images) return []
+    // Filter to standard images, or all images if no standard images exist
+    const standard = product.images.filter((img) => !img.view_type || img.view_type === 'standard')
+    const list = standard.length > 0 ? standard : product.images
+    return [...list].sort((a, b) => a.display_order - b.display_order)
+  }, [product])
+
+  // Mobile scroll listener to update active dot index
+  const handleMobileScroll = () => {
+    if (!mobileCarouselRef.current) return
+    const el = mobileCarouselRef.current
+    const scrollLeft = el.scrollLeft
+    const width = el.offsetWidth || 1
+    const newIndex = Math.round(scrollLeft / width)
+    if (newIndex !== mobileActiveIndex && newIndex >= 0 && newIndex < catalogImages.length) {
+      setMobileActiveIndex(newIndex)
+    }
+  }
+
+  const scrollMobileTo = (index: number) => {
+    if (!mobileCarouselRef.current) return
+    const el = mobileCarouselRef.current
+    const width = el.offsetWidth
+    el.scrollTo({ left: index * width, behavior: 'smooth' })
+    setMobileActiveIndex(index)
+  }
 
   if (loading) {
     return (
@@ -101,7 +136,7 @@ export default function ProductPage() {
         price: selectedVariant.price_override || product.price,
         compareAtPrice: product.compare_at_price,
         maxStock: selectedVariant.stock_quantity,
-        image: selectedImage || '/assets/wenzy_front_texture.png',
+        image: selectedImage || catalogImages[0]?.image_url || '/assets/wenzy_front_texture.png',
       },
       quantity
     )
@@ -111,9 +146,9 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="wrap py-8 sm:py-12">
+    <div className="wrap py-6 sm:py-10">
       {/* 1. Breadcrumbs */}
-      <nav className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-8">
+      <nav className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-6">
         <Link to="/" className="hover:text-black transition-colors">
           Home
         </Link>
@@ -134,49 +169,124 @@ export default function ProductPage() {
       </nav>
 
       {/* 2. Main Product Layout (2 Columns) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
-        {/* Left Column: Image Gallery (7 cols on lg) */}
-        <div className="lg:col-span-7 flex flex-col-reverse sm:flex-row gap-4">
-          {/* Thumbnails Column */}
-          {product.images && product.images.length > 1 && (
-            <div className="flex sm:flex-col gap-3 overflow-x-auto sm:overflow-visible shrink-0 pb-2 sm:pb-0">
-              {product.images.map((img) => (
-                <button
-                  key={img.id}
-                  onClick={() => setSelectedImage(img.image_url)}
-                  className={`w-16 h-20 sm:w-20 sm:h-24 bg-neutral-100 overflow-hidden border transition-all ${
-                    selectedImage === img.image_url
-                      ? 'border-black ring-1 ring-black'
-                      : 'border-neutral-200 hover:border-neutral-400 opacity-70 hover:opacity-100'
-                  }`}
-                >
-                  <img src={img.image_url} alt={img.alt_text || product.name} className="w-full h-full object-cover" />
-                </button>
-              ))}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-start">
+        
+        {/* ============================================================== */}
+        {/* LEFT COLUMN: PRODUCT IMAGES                                    */}
+        {/* Mobile: Swipeable touch carousel with dots indicator            */}
+        {/* Desktop: Vertical stacked scrollable images                    */}
+        {/* ============================================================== */}
+        <div className="lg:col-span-7 w-full">
+          
+          {/* MOBILE VIEW (< lg): Horizontal swipe carousel with dots indicator */}
+          <div className="block lg:hidden relative w-full">
+            {/* Swipeable image container */}
+            <div
+              ref={mobileCarouselRef}
+              onScroll={handleMobileScroll}
+              className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-none rounded-lg bg-neutral-100"
+              style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
+            >
+              {catalogImages.length > 0 ? (
+                catalogImages.map((img, idx) => (
+                  <div
+                    key={img.id || idx}
+                    className="w-full shrink-0 snap-center relative aspect-[3/4] overflow-hidden"
+                  >
+                    <img
+                      src={img.image_url}
+                      alt={img.alt_text || `${product.name} photo ${idx + 1}`}
+                      className="w-full h-full object-cover object-top"
+                      loading={idx === 0 ? 'eager' : 'lazy'}
+                    />
+                    {hasDiscount && idx === 0 && (
+                      <span className="absolute top-3 left-3 badge-sale text-[10px] py-1 px-2">
+                        {discountPercent}% OFF
+                      </span>
+                    )}
+                    {product.details?.fit && idx === 0 && (
+                      <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-xs text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow-xs">
+                        {product.details.fit}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="w-full aspect-[3/4] bg-neutral-100 flex items-center justify-center text-neutral-400 text-xs font-mono">
+                  NO IMAGE
+                </div>
+              )}
             </div>
-          )}
 
-          {/* Main Display Image (Aspect Square or 4:5) */}
-          <div className="flex-1 aspect-[4/5] sm:aspect-square bg-neutral-100 overflow-hidden border border-neutral-200 relative group">
-            <img
-              src={selectedImage || '/assets/wenzy_front_texture.png'}
-              alt={product.name}
-              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-            />
-            {hasDiscount && (
-              <span className="absolute top-4 left-4 badge-sale">
-                {discountPercent}% OFF
-              </span>
+            {/* Mobile Dots Indicator (matches reference image dots) */}
+            {catalogImages.length > 1 && (
+              <div className="flex items-center justify-center gap-1.5 pt-3 pb-1">
+                {catalogImages.map((_, dotIdx) => {
+                  const isActive = mobileActiveIndex === dotIdx
+                  return (
+                    <button
+                      key={dotIdx}
+                      type="button"
+                      onClick={() => scrollMobileTo(dotIdx)}
+                      aria-label={`Go to image ${dotIdx + 1}`}
+                      className={`transition-all duration-300 rounded-full ${
+                        isActive
+                          ? 'w-5 h-1.5 bg-neutral-900'
+                          : 'w-1.5 h-1.5 bg-neutral-300 hover:bg-neutral-500'
+                      }`}
+                    />
+                  )
+                })}
+              </div>
             )}
           </div>
+
+          {/* DESKTOP VIEW (>= lg): Scrollable stacked list of images */}
+          <div className="hidden lg:flex flex-col gap-5">
+            {catalogImages.length > 0 ? (
+              catalogImages.map((img, idx) => (
+                <div
+                  key={img.id || idx}
+                  className="relative w-full aspect-[3/4] bg-neutral-100 overflow-hidden rounded-md border border-neutral-200 group"
+                >
+                  <img
+                    src={img.image_url}
+                    alt={img.alt_text || `${product.name} view ${idx + 1}`}
+                    className="w-full h-full object-cover object-top group-hover:scale-102 transition-transform duration-500 ease-out"
+                    loading={idx === 0 ? 'eager' : 'lazy'}
+                  />
+                  {hasDiscount && idx === 0 && (
+                    <span className="absolute top-4 left-4 badge-sale">
+                      {discountPercent}% OFF
+                    </span>
+                  )}
+                  {product.details?.fit && idx === 0 && (
+                    <div className="absolute top-4 right-4 bg-black/85 backdrop-blur-xs text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded shadow-xs">
+                      {product.details.fit}
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="w-full aspect-[3/4] bg-neutral-100 flex items-center justify-center text-neutral-400 text-xs font-mono rounded-md">
+                NO IMAGE
+              </div>
+            )}
+          </div>
+
         </div>
 
-        {/* Right Column: Product Purchasing Details (5 cols on lg) */}
-        <div className="lg:col-span-5 flex flex-col space-y-6">
+        {/* ============================================================== */}
+        {/* RIGHT COLUMN: STICKY PURCHASING DETAILS (5 cols on lg)         */}
+        {/* On desktop: sticky top-24, stays fixed while left column      */}
+        {/* scrolls past, scrolls along once past entire image gallery    */}
+        {/* ============================================================== */}
+        <div className="lg:col-span-5 flex flex-col space-y-6 lg:sticky lg:top-24">
+          
           {/* Brand Edition Header */}
           <div className="space-y-2">
             <div className="inline-flex items-center gap-1.5 font-accent text-xs font-bold uppercase tracking-widest text-neutral-500">
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 text-black" />
               <span>WENZY STREETWEAR • SEASON 01</span>
             </div>
 
@@ -191,7 +301,7 @@ export default function ProductPage() {
               </span>
               {hasDiscount && (
                 <>
-                  <span className="text-base text-neutral-400 line-through">
+                  <span className="text-base text-neutral-400 line-through font-normal">
                     ₹{product.compare_at_price!.toLocaleString('en-IN')}
                   </span>
                   <span className="badge-sale">
@@ -231,7 +341,7 @@ export default function ProductPage() {
                       isOut
                         ? 'border-neutral-200 text-neutral-300 line-through cursor-not-allowed bg-neutral-50'
                         : isSelected
-                        ? 'border-black bg-black text-white'
+                        ? 'border-black bg-black text-white font-black'
                         : 'border-neutral-300 text-black hover:border-black'
                     }`}
                   >
@@ -432,7 +542,7 @@ export default function ProductPage() {
           <div className="wrap flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <img
-                src={selectedImage}
+                src={selectedImage || catalogImages[0]?.image_url}
                 alt={product.name}
                 className="w-10 h-10 object-cover bg-neutral-100 border border-neutral-200 shrink-0"
               />

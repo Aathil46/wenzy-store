@@ -6,11 +6,32 @@ import type { Collection, Product } from '../types/database'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getPrimaryImage(product: Product): string {
+function getProductImages(product: Product): { primary: string; secondary: string } {
   const imgs = product.images || []
-  const primary = imgs.find((i) => i.is_primary)
-  const standard = imgs.find((i) => !i.view_type || i.view_type === 'standard')
-  return primary?.image_url || standard?.image_url || imgs[0]?.image_url || ''
+  const primaryObj = imgs.find((i) => i.is_primary)
+  const standardImgs = imgs.filter((i) => !i.view_type || i.view_type === 'standard')
+  
+  const primary = primaryObj?.image_url || standardImgs[0]?.image_url || imgs[0]?.image_url || ''
+  
+  // Secondary image (hover alternate view):
+  // 1. Look for second standard image
+  // 2. Or back view cutout/image if available
+  // 3. Or second image in array
+  let secondary = ''
+  const remainingStandard = standardImgs.filter((i) => i.image_url !== primary)
+  if (remainingStandard.length > 0) {
+    secondary = remainingStandard[0].image_url
+  } else {
+    const backImg = imgs.find((i) => i.view_type === 'back' && i.image_url !== primary)
+    if (backImg) {
+      secondary = backImg.image_url
+    } else {
+      const otherImg = imgs.find((i) => i.image_url !== primary)
+      if (otherImg) secondary = otherImg.image_url
+    }
+  }
+
+  return { primary, secondary: secondary || primary }
 }
 
 function formatFit(fitStr?: string | null): string {
@@ -39,25 +60,46 @@ function formatFabric(product: Product): string {
 // ─── Unique Streetwear E-Commerce Product Card ────────────────────────────────
 
 function ProductCard({ product }: { product: Product }) {
-  const imgUrl = getPrimaryImage(product)
+  const { primary: primaryImg, secondary: secondaryImg } = getProductImages(product)
   const fitBadge = formatFit(product.details?.fit)
   const fabricBadge = formatFabric(product)
   const [wishlisted, setWishlisted] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+
+  const hasSecondary = Boolean(secondaryImg && secondaryImg !== primaryImg)
 
   return (
     <Link
       to={`/product/${product.slug}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className="group flex flex-col bg-white overflow-hidden rounded-md border border-neutral-200/90 hover:border-black/40 transition-all duration-300 hover:shadow-md"
     >
       {/* 1. Image Frame (Fixed 3:4 portrait ratio matching Reference Frame) */}
       <div className="relative w-full aspect-[3/4] bg-neutral-100 overflow-hidden">
-        {imgUrl ? (
-          <img
-            src={imgUrl}
-            alt={product.name}
-            className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-105"
-            loading="lazy"
-          />
+        {primaryImg ? (
+          <>
+            {/* Primary Image */}
+            <img
+              src={primaryImg}
+              alt={product.name}
+              className={`absolute inset-0 w-full h-full object-cover object-top transition-all duration-500 ease-out ${
+                isHovered && hasSecondary ? 'opacity-0 scale-105' : 'opacity-100 scale-100 group-hover:scale-105'
+              }`}
+              loading="lazy"
+            />
+            {/* Secondary Image (Smooth Transition on Hover, matching Normless report) */}
+            {hasSecondary && (
+              <img
+                src={secondaryImg}
+                alt={`${product.name} alternate view`}
+                className={`absolute inset-0 w-full h-full object-cover object-top transition-all duration-500 ease-out ${
+                  isHovered ? 'opacity-100 scale-105' : 'opacity-0 scale-100'
+                }`}
+                loading="lazy"
+              />
+            )}
+          </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-neutral-300 text-xs font-mono">
             NO IMAGE
