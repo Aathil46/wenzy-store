@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Heart } from 'lucide-react'
 import { getCollections, getProducts } from '../lib/storeApi'
@@ -13,33 +13,49 @@ function getPrimaryImage(product: Product): string {
   return primary?.image_url || standard?.image_url || imgs[0]?.image_url || ''
 }
 
-function formatPrice(amount: number): string {
-  return `₹${amount.toLocaleString('en-IN')}`
+function formatFit(fitStr?: string | null): string {
+  if (!fitStr) return 'OVERSIZED FIT'
+  const cleaned = fitStr.toUpperCase().trim()
+  if (cleaned.includes('OVERSIZED')) return 'OVERSIZED FIT'
+  if (cleaned.includes('RELAXED')) return 'RELAXED FIT'
+  if (cleaned.includes('REGULAR')) return 'REGULAR FIT'
+  if (cleaned.includes('BOXY')) return 'BOXY FIT'
+  return cleaned
 }
 
-function getFitBadge(product: Product): string | null {
-  return product.details?.fit || null
+function formatFabric(product: Product): string {
+  const fabric = product.details?.fabric
+  const gsm = product.details?.gsm
+  if (gsm && gsm >= 240) return `${gsm} GSM HEAVYWEIGHT`
+  if (fabric) {
+    if (fabric.toLowerCase().includes('french terry')) return 'HEAVY FRENCH TERRY'
+    if (fabric.toLowerCase().includes('linen')) return 'LINEN BLEND'
+    if (fabric.toLowerCase().includes('fleece')) return 'PREMIUM FLEECE'
+    return fabric.toUpperCase()
+  }
+  return 'PREMIUM HEAVY GAUGE'
 }
 
-// ─── Product Card ─────────────────────────────────────────────────────────────
+// ─── Unique Streetwear E-Commerce Product Card ────────────────────────────────
 
 function ProductCard({ product }: { product: Product }) {
   const imgUrl = getPrimaryImage(product)
-  const fit = getFitBadge(product)
+  const fitBadge = formatFit(product.details?.fit)
+  const fabricBadge = formatFabric(product)
   const [wishlisted, setWishlisted] = useState(false)
 
   return (
     <Link
       to={`/product/${product.slug}`}
-      className="group flex flex-col bg-white overflow-hidden rounded-sm border border-neutral-100 hover:border-neutral-300 transition-all duration-200 hover:shadow-md"
+      className="group flex flex-col bg-white overflow-hidden rounded-md border border-neutral-200/90 hover:border-black/40 transition-all duration-300 hover:shadow-md"
     >
-      {/* Image frame — aspect 3:4 */}
+      {/* 1. Image Frame (Fixed 3:4 portrait ratio matching Reference Frame) */}
       <div className="relative w-full aspect-[3/4] bg-neutral-100 overflow-hidden">
         {imgUrl ? (
           <img
             src={imgUrl}
             alt={product.name}
-            className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+            className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-105"
             loading="lazy"
           />
         ) : (
@@ -48,14 +64,13 @@ function ProductCard({ product }: { product: Product }) {
           </div>
         )}
 
-        {/* Fit badge */}
-        {fit && (
-          <div className="absolute top-2 left-2 bg-black/80 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 leading-none">
-            {fit}
-          </div>
-        )}
+        {/* Fit Badge (Top-Left matching reference) */}
+        <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-xs text-white text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-xs flex items-center gap-1 shadow-xs">
+          <span className="text-neutral-400">|</span>
+          <span>{fitBadge}</span>
+        </div>
 
-        {/* Wishlist icon */}
+        {/* Wishlist Heart Icon (Top-Right matching reference) */}
         <button
           type="button"
           onClick={(e) => {
@@ -63,48 +78,53 @@ function ProductCard({ product }: { product: Product }) {
             e.stopPropagation()
             setWishlisted((v) => !v)
           }}
-          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 ${
+          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-xs ${
             wishlisted
               ? 'bg-black text-white'
-              : 'bg-white/80 text-neutral-500 hover:text-black hover:bg-white'
-          } shadow-sm`}
+              : 'bg-white/80 backdrop-blur-xs text-neutral-600 hover:text-black hover:bg-white'
+          }`}
           aria-label="Wishlist"
         >
           <Heart className={`w-3.5 h-3.5 ${wishlisted ? 'fill-current' : ''}`} />
         </button>
 
-        {/* New badge */}
-        {product.is_new && (
-          <div className="absolute bottom-2 left-2 bg-white text-black text-[9px] font-black uppercase tracking-widest px-2 py-1 leading-none border border-neutral-200">
-            NEW
-          </div>
-        )}
+        {/* Fabric / Weight Spec Badge (Bottom-Left matching reference) */}
+        <div className="absolute bottom-2 left-2 bg-black/80 backdrop-blur-xs text-white text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 max-w-[85%] truncate rounded-xs shadow-xs">
+          {fabricBadge}
+        </div>
       </div>
 
-      {/* Info */}
-      <div className="p-3 flex flex-col gap-1 flex-1">
+      {/* 2. Product Information Details */}
+      <div className="p-3 flex flex-col gap-1 flex-1 bg-white">
         {/* Category name */}
-        {product.category?.name && (
-          <div className="text-[10px] text-neutral-400 uppercase tracking-wider font-medium leading-none">
-            {product.category.name}
-          </div>
-        )}
+        <div className="text-[10px] sm:text-[11px] text-neutral-400 uppercase tracking-wider font-semibold truncate">
+          {product.category?.name || 'Streetwear'}
+        </div>
 
-        {/* Product name */}
-        <div className="font-black text-black uppercase text-[13px] leading-tight tracking-tight line-clamp-2">
+        {/* Product Name (Bold, Black, Uppercase) */}
+        <div className="font-black text-black uppercase text-xs sm:text-sm leading-tight tracking-tight line-clamp-1">
           {product.name}
         </div>
 
-        {/* Pricing */}
-        <div className="flex items-baseline gap-2 mt-auto pt-1">
-          <span className="font-black text-black text-sm">{formatPrice(product.price)}</span>
+        {/* Price Row: Unique Streetwear Tag with Bold Actual Price + Non-Bold Compare Price */}
+        <div className="flex items-center gap-2 pt-1 mt-auto flex-wrap">
+          <div className="inline-flex items-baseline gap-1 bg-gradient-to-r from-purple-100/90 via-pink-50/80 to-purple-50/50 border border-purple-200/60 px-2 py-0.5 rounded text-[11px] sm:text-xs">
+            <span className="text-[9px] sm:text-[10px] uppercase font-bold text-neutral-600 tracking-wider">
+              Price
+            </span>
+            <span className="font-black text-black text-xs sm:text-sm">
+              ₹{product.price.toLocaleString('en-IN')}
+            </span>
+          </div>
+
           {product.compare_at_price && product.compare_at_price > product.price && (
             <span className="text-neutral-400 text-xs line-through font-normal">
-              {formatPrice(product.compare_at_price)}
+              ₹{product.compare_at_price.toLocaleString('en-IN')}
             </span>
           )}
+
           {product.compare_at_price && product.compare_at_price > product.price && (
-            <span className="text-xs font-bold text-emerald-600 ml-auto">
+            <span className="text-[10px] font-extrabold text-emerald-600 ml-auto">
               {Math.round((1 - product.price / product.compare_at_price) * 100)}% off
             </span>
           )}
@@ -114,103 +134,128 @@ function ProductCard({ product }: { product: Product }) {
   )
 }
 
-// ─── Main Section ─────────────────────────────────────────────────────────────
-
-type TabKey = 'trending' | string
+// ─── Main Section Component ───────────────────────────────────────────────────
 
 export default function CollectionsSection() {
   const [collections, setCollections] = useState<Collection[]>([])
   const [allProducts, setAllProducts] = useState<Product[]>([])
-  const [activeTab, setActiveTab] = useState<TabKey>('trending')
+  const [activeTab, setActiveTab] = useState<string>('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true
     const init = async () => {
       try {
         const [cols, prods] = await Promise.all([
           getCollections(true),
           getProducts(),
         ])
+        if (!mounted) return
         setCollections(cols)
         setAllProducts(prods)
+        // Select first active collection by default
+        if (cols.length > 0) {
+          setActiveTab(cols[0].id)
+        } else {
+          setActiveTab('trending')
+        }
       } catch (err) {
         console.error('CollectionsSection load error', err)
       } finally {
-        setLoading(false)
+        if (mounted) setLoading(false)
       }
     }
     init()
+    return () => {
+      mounted = false
+    }
   }, [])
 
-  const visibleProducts = useCallback((): Product[] => {
+  // Filter products by currently active collection tab
+  const displayProducts = useMemo(() => {
+    if (!activeTab) return allProducts.slice(0, 8)
+
+    // Check if selected tab is a collection
+    const activeCol = collections.find((c) => c.id === activeTab)
+    if (activeCol) {
+      const filtered = allProducts.filter((p) => p.collection_id === activeCol.id)
+      // If collection is Trending / Trend and has no direct assignment, fallback to featured/new items
+      if (filtered.length === 0 && (activeCol.slug === 'trending' || activeCol.slug === 'trend')) {
+        const featured = allProducts.filter((p) => p.is_featured || p.is_new)
+        return featured.length > 0 ? featured : allProducts.slice(0, 8)
+      }
+      return filtered
+    }
+
     if (activeTab === 'trending') {
-      // "Trending" shows all featured or new products
       const featured = allProducts.filter((p) => p.is_featured || p.is_new)
       return featured.length > 0 ? featured : allProducts.slice(0, 8)
     }
-    return allProducts.filter((p) => p.collection_id === activeTab)
-  }, [activeTab, allProducts])
 
-  // Don't render if no data at all
+    return allProducts.slice(0, 8)
+  }, [activeTab, collections, allProducts])
+
+  // Don't render empty section
   if (!loading && collections.length === 0 && allProducts.length === 0) return null
 
-  const displayProducts = visibleProducts()
-
   return (
-    <section className="py-14 md:py-20 bg-white">
+    <section className="py-12 md:py-16 bg-white border-t border-neutral-200">
       <div className="wrap">
-        {/* Section heading */}
-        <div className="mb-8 md:mb-10">
+        {/* Section Heading */}
+        <div className="mb-6 md:mb-8">
           <h2 className="font-heading font-black text-2xl md:text-3xl uppercase tracking-tight text-black">
-            Shop the Edit
+            Collections
           </h2>
           <div className="w-12 h-0.5 bg-black mt-2" />
         </div>
 
-        {/* Filter tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-8 scrollbar-none">
-          {/* Trending tab always first */}
-          <button
-            onClick={() => setActiveTab('trending')}
-            className={`flex-shrink-0 px-4 py-2 text-xs font-black uppercase tracking-widest rounded-full border transition-all duration-150 ${
-              activeTab === 'trending'
-                ? 'bg-black text-white border-black'
-                : 'bg-white text-black border-neutral-300 hover:border-black'
-            }`}
-          >
-            Trending
-          </button>
-
-          {/* Dynamic collection tabs */}
-          {collections.map((col) => (
+        {/* Filter Tabs (Horizontal scrolling on mobile matching Reference) */}
+        <div className="flex gap-2 overflow-x-auto pb-3 mb-6 scrollbar-none items-center">
+          {collections.length > 0 ? (
+            collections.map((col) => {
+              const isActive = activeTab === col.id
+              return (
+                <button
+                  key={col.id}
+                  onClick={() => setActiveTab(col.id)}
+                  className={`flex-shrink-0 px-4 py-1.5 text-xs font-black uppercase tracking-wider rounded-md border transition-all duration-150 ${
+                    isActive
+                      ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs'
+                      : 'bg-white text-neutral-800 border-neutral-300 hover:border-black hover:text-black'
+                  }`}
+                >
+                  {col.name}
+                </button>
+              )
+            })
+          ) : (
             <button
-              key={col.id}
-              onClick={() => setActiveTab(col.id)}
-              className={`flex-shrink-0 px-4 py-2 text-xs font-black uppercase tracking-widest rounded-full border transition-all duration-150 ${
-                activeTab === col.id
-                  ? 'bg-black text-white border-black'
-                  : 'bg-white text-black border-neutral-300 hover:border-black'
-              }`}
+              onClick={() => setActiveTab('trending')}
+              className="flex-shrink-0 px-4 py-1.5 text-xs font-black uppercase tracking-wider rounded-md border bg-neutral-900 text-white border-neutral-900"
             >
-              {col.name}
+              Trending
             </button>
-          ))}
+          )}
         </div>
 
-        {/* Product grid */}
+        {/* Product Grid: 2-column on mobile (image 3) & 4-column on desktop (image 1) */}
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="animate-pulse bg-neutral-100 aspect-[3/4] rounded-sm" />
+              <div key={i} className="animate-pulse bg-neutral-100 aspect-[3/4] rounded-md" />
             ))}
           </div>
         ) : displayProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-neutral-400">
-            <p className="text-sm font-medium">No products in this collection yet.</p>
-            <p className="text-xs mt-1">The admin can assign products to collections via the product editor.</p>
+          <div className="flex flex-col items-center justify-center py-16 text-neutral-400 bg-neutral-50 rounded-lg border border-dashed border-neutral-200">
+            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-neutral-500">
+              No products in this collection yet
+            </p>
+            <p className="text-[11px] text-neutral-400 mt-1">
+              Assign pieces to this collection in the Admin Product Manager.
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             {displayProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
