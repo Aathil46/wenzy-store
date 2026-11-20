@@ -931,15 +931,20 @@ export default function AdminProducts() {
                   </div>
 
                   <div>
-                    <label className="block text-neutral-600 uppercase font-bold text-[10px] mb-1">
-                      Description & Concept
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-neutral-600 uppercase font-bold text-[10px]">
+                        Description & Story
+                      </label>
+                      <span className="text-[10px] text-neutral-400 font-medium">
+                        Supports **bold**, bullets (• or -), and paragraphs
+                      </span>
+                    </div>
                     <textarea
-                      rows={3}
+                      rows={6}
                       value={formData.description}
                       onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                      placeholder="High-density back screen print, 240 GSM drop shoulder cut..."
-                      className="w-full border border-neutral-300 p-3 text-xs outline-none focus:border-black"
+                      placeholder={`**Discipline is a choice. Temptation is a test.**\n\nCrafted from heavyweight 240 GSM French terry cotton...\n\n• **Front:** clean chest print\n• **Back:** oversized artwork\n• **Fit:** oversized streetwear cut\n• **Fabric:** 100% combed cotton`}
+                      className="w-full border border-neutral-300 p-3 text-xs outline-none focus:border-black font-sans leading-relaxed"
                     />
                   </div>
                 </div>

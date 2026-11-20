@@ -57,9 +57,9 @@ export default function ProductPage() {
   const [mobileActiveIndex, setMobileActiveIndex] = useState(0)
   const mobileCarouselRef = useRef<HTMLDivElement>(null)
 
-  // Accordion tabs (matching Image 1 pill format)
+  // Accordion tabs (matching Image 1 clean white theme)
   const [openAccordions, setOpenAccordions] = useState<{ [key: string]: boolean }>({
-    description: false,
+    description: true, // open by default as shown in reference image
     size_guide: false,
     return_policy: false,
     shipping_info: false,
@@ -98,9 +98,28 @@ export default function ProductPage() {
   // Lightbox for Size Guide image or review media
   const [lightboxItem, setLightboxItem] = useState<{ type: 'image' | 'video'; url: string } | null>(null)
 
-  // Toggle Accordion
+  // Open accordion and smooth scroll to it
+  const openAndScrollTo = (key: string) => {
+    setOpenAccordions((prev) => ({ ...prev, [key]: true }))
+    setTimeout(() => {
+      const el = document.getElementById(`accordion-${key}`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 60)
+  }
+
+  // Toggle Accordion with smooth scroll when expanding
   const toggleAccordion = (key: string) => {
-    setOpenAccordions((prev) => ({ ...prev, [key]: !prev[key] }))
+    setOpenAccordions((prev) => {
+      const nextState = !prev[key]
+      if (nextState) {
+        setTimeout(() => {
+          document.getElementById(`accordion-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        }, 60)
+      }
+      return { ...prev, [key]: nextState }
+    })
   }
 
   // Fetch product data and reviews
@@ -661,10 +680,7 @@ export default function ProductPage() {
               <span>Select Size</span>
               <button
                 type="button"
-                onClick={() => {
-                  setOpenAccordions((prev) => ({ ...prev, size_guide: true }))
-                  document.getElementById('accordion-size-guide')?.scrollIntoView({ behavior: 'smooth' })
-                }}
+                onClick={() => openAndScrollTo('size_guide')}
                 className="text-neutral-500 hover:text-black underline underline-offset-4 cursor-pointer"
               >
                 Size Chart
@@ -777,32 +793,66 @@ export default function ProductPage() {
             </div>
           )}
 
+          {/* Quick links to open & smooth-scroll to accordions */}
+          <div className="flex flex-wrap items-center gap-2 pt-1 text-xs font-semibold text-neutral-500">
+            <button
+              type="button"
+              onClick={() => openAndScrollTo('description')}
+              className="hover:text-black underline underline-offset-4 cursor-pointer"
+            >
+              Description
+            </button>
+            <span className="text-neutral-300">•</span>
+            <button
+              type="button"
+              onClick={() => openAndScrollTo('size_guide')}
+              className="hover:text-black underline underline-offset-4 cursor-pointer"
+            >
+              Size Guide
+            </button>
+            <span className="text-neutral-300">•</span>
+            <button
+              type="button"
+              onClick={() => openAndScrollTo('return_policy')}
+              className="hover:text-black underline underline-offset-4 cursor-pointer"
+            >
+              Return Policy
+            </button>
+            <span className="text-neutral-300">•</span>
+            <button
+              type="button"
+              onClick={() => openAndScrollTo('shipping_info')}
+              className="hover:text-black underline underline-offset-4 cursor-pointer"
+            >
+              Shipping Info
+            </button>
+          </div>
+
           {/* ============================================================== */}
-          {/* ACCORDION SECTIONS (Matching Reference Image 1 in WENZY Theme) */}
+          {/* ACCORDION SECTIONS (Matching Reference Image in Clean Theme)   */}
           {/* ============================================================== */}
-          <div className="space-y-2.5 pt-3">
+          <div className="divide-y divide-neutral-200 border-t border-b border-neutral-200 pt-1">
             {/* 1. Description */}
-            <div className="bg-neutral-900 text-white rounded-xl border border-neutral-800 overflow-hidden transition-all">
+            <div id="accordion-description" className="py-4 scroll-mt-28">
               <button
                 type="button"
                 onClick={() => toggleAccordion('description')}
-                className="w-full p-4 flex items-center justify-between text-left text-xs font-bold uppercase tracking-wider hover:bg-neutral-800/60 transition-colors"
+                className="w-full flex items-center justify-between text-left text-sm sm:text-base font-semibold text-neutral-900 hover:text-black transition-colors cursor-pointer"
               >
-                <div className="flex items-center gap-3">
-                  <FileText className="w-4 h-4 text-neutral-300" />
-                  <span>Description</span>
-                </div>
-                {openAccordions.description ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                <span>Description</span>
+                <span className="text-lg leading-none font-light text-neutral-800">
+                  {openAccordions.description ? '—' : '+'}
+                </span>
               </button>
               {openAccordions.description && (
-                <div className="px-4 pb-4 pt-1 text-xs text-neutral-300 leading-relaxed space-y-2.5 border-t border-neutral-800 animate-fade-in">
-                  <p>{product.description}</p>
-                  {product.details && (
-                    <ul className="list-disc pl-4 space-y-1 text-neutral-400 text-[11px] pt-1">
-                      {product.details.fabric && <li>Fabric: {product.details.fabric}</li>}
-                      {product.details.gsm && <li>Weight: {product.details.gsm} GSM</li>}
-                      {product.details.fit && <li>Cut & Silhouette: {product.details.fit}</li>}
-                      {product.details.care && <li>Care: {product.details.care}</li>}
+                <div className="pt-3.5 animate-fade-in">
+                  <FormattedDescription text={product.description} />
+                  {product.details && (product.details.fabric || product.details.gsm || product.details.fit || product.details.care) && (
+                    <ul className="list-disc pl-5 space-y-1 text-neutral-700 text-xs pt-3 border-t border-neutral-100 mt-3">
+                      {product.details.fabric && <li><strong className="font-bold text-black">Fabric:</strong> {product.details.fabric}</li>}
+                      {product.details.gsm && <li><strong className="font-bold text-black">Weight:</strong> {product.details.gsm} GSM Heavyweight</li>}
+                      {product.details.fit && <li><strong className="font-bold text-black">Fit:</strong> {product.details.fit}</li>}
+                      {product.details.care && <li><strong className="font-bold text-black">Care:</strong> {product.details.care}</li>}
                     </ul>
                   )}
                 </div>
@@ -810,22 +860,21 @@ export default function ProductPage() {
             </div>
 
             {/* 2. Size Guide (Small image section added by admin, scrollable, click to view) */}
-            <div id="accordion-size-guide" className="bg-neutral-900 text-white rounded-xl border border-neutral-800 overflow-hidden transition-all">
+            <div id="accordion-size_guide" className="py-4 scroll-mt-28">
               <button
                 type="button"
                 onClick={() => toggleAccordion('size_guide')}
-                className="w-full p-4 flex items-center justify-between text-left text-xs font-bold uppercase tracking-wider hover:bg-neutral-800/60 transition-colors"
+                className="w-full flex items-center justify-between text-left text-sm sm:text-base font-semibold text-neutral-900 hover:text-black transition-colors cursor-pointer"
               >
-                <div className="flex items-center gap-3">
-                  <Ruler className="w-4 h-4 text-neutral-300" />
-                  <span>Size Guide</span>
-                </div>
-                {openAccordions.size_guide ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                <span>Size Guide</span>
+                <span className="text-lg leading-none font-light text-neutral-800">
+                  {openAccordions.size_guide ? '—' : '+'}
+                </span>
               </button>
               {openAccordions.size_guide && (
-                <div className="px-4 pb-4 pt-2 text-xs text-neutral-300 space-y-3 border-t border-neutral-800 animate-fade-in">
-                  <p className="text-[11px] text-neutral-400">
-                    Oversized boxy cut. Tap the size guide chart to open and inspect in full detail.
+                <div className="pt-3.5 space-y-3 animate-fade-in">
+                  <p className="text-xs text-neutral-600">
+                    Oversized streetwear drop-shoulder fit. Tap the size guide chart to open full measurements lightbox.
                   </p>
                   <div
                     onClick={() =>
@@ -834,14 +883,14 @@ export default function ProductPage() {
                         url: product.details?.size_guide_image || '/assets/size_guide.svg',
                       })
                     }
-                    className="relative rounded-lg overflow-hidden border border-neutral-700 bg-neutral-950 cursor-zoom-in group max-w-sm"
+                    className="relative rounded-lg overflow-hidden border border-neutral-200 bg-neutral-50 cursor-zoom-in group max-w-sm"
                   >
                     <img
                       src={product.details?.size_guide_image || '/assets/size_guide.svg'}
                       alt="Size Guide Chart"
                       className="w-full h-auto object-cover group-hover:scale-102 transition-transform duration-300"
                     />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white gap-1.5 text-[11px] font-bold uppercase tracking-wider pointer-events-none">
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white gap-1.5 text-xs font-bold uppercase tracking-wider pointer-events-none">
                       <Maximize2 className="w-4 h-4" />
                       <span>Click to Enlarge</span>
                     </div>
@@ -851,20 +900,19 @@ export default function ProductPage() {
             </div>
 
             {/* 3. Return Policy */}
-            <div className="bg-neutral-900 text-white rounded-xl border border-neutral-800 overflow-hidden transition-all">
+            <div id="accordion-return_policy" className="py-4 scroll-mt-28">
               <button
                 type="button"
                 onClick={() => toggleAccordion('return_policy')}
-                className="w-full p-4 flex items-center justify-between text-left text-xs font-bold uppercase tracking-wider hover:bg-neutral-800/60 transition-colors"
+                className="w-full flex items-center justify-between text-left text-sm sm:text-base font-semibold text-neutral-900 hover:text-black transition-colors cursor-pointer"
               >
-                <div className="flex items-center gap-3">
-                  <Package className="w-4 h-4 text-neutral-300" />
-                  <span>Return Policy</span>
-                </div>
-                {openAccordions.return_policy ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                <span>Return Policy</span>
+                <span className="text-lg leading-none font-light text-neutral-800">
+                  {openAccordions.return_policy ? '—' : '+'}
+                </span>
               </button>
               {openAccordions.return_policy && (
-                <div className="px-4 pb-4 pt-1 text-xs text-neutral-300 leading-relaxed border-t border-neutral-800 animate-fade-in">
+                <div className="pt-3.5 text-sm text-neutral-800 leading-relaxed animate-fade-in">
                   <p>
                     {product.details?.return_policy ||
                       '7-day hassle-free exchange on unworn, unwashed streetwear pieces with original brand tags and packaging intact. Contact support@wenzy.store for instant reverse pickup scheduling.'}
@@ -874,20 +922,19 @@ export default function ProductPage() {
             </div>
 
             {/* 4. Shipping Information */}
-            <div className="bg-neutral-900 text-white rounded-xl border border-neutral-800 overflow-hidden transition-all">
+            <div id="accordion-shipping_info" className="py-4 scroll-mt-28">
               <button
                 type="button"
                 onClick={() => toggleAccordion('shipping_info')}
-                className="w-full p-4 flex items-center justify-between text-left text-xs font-bold uppercase tracking-wider hover:bg-neutral-800/60 transition-colors"
+                className="w-full flex items-center justify-between text-left text-sm sm:text-base font-semibold text-neutral-900 hover:text-black transition-colors cursor-pointer"
               >
-                <div className="flex items-center gap-3">
-                  <Truck className="w-4 h-4 text-neutral-300" />
-                  <span>Shipping Information</span>
-                </div>
-                {openAccordions.shipping_info ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                <span>Shipping Information</span>
+                <span className="text-lg leading-none font-light text-neutral-800">
+                  {openAccordions.shipping_info ? '—' : '+'}
+                </span>
               </button>
               {openAccordions.shipping_info && (
-                <div className="px-4 pb-4 pt-1 text-xs text-neutral-300 leading-relaxed border-t border-neutral-800 animate-fade-in">
+                <div className="pt-3.5 text-sm text-neutral-800 leading-relaxed animate-fade-in">
                   <p>
                     {product.details?.shipping_info ||
                       'Orders processed & dispatched within 24–48 hours from our Mumbai facility. Express delivery to metro hubs in 2–4 business days; rest of India in 4–6 business days with live SMS tracking.'}
@@ -1480,6 +1527,95 @@ export default function ProductPage() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * Inline formatting helper: parses **bold** markdown markers
+ */
+function renderFormattedInline(str: string) {
+  const parts = str.split(/(\*\*[^*]+\*\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={i} className="font-bold text-black">
+          {part.slice(2, -2)}
+        </strong>
+      )
+    }
+    return <span key={i}>{part}</span>
+  })
+}
+
+/**
+ * Formatted Description component that renders paragraphs, bold headlines,
+ * and bullet points (• or -) matching the clean theme in the reference image.
+ */
+function FormattedDescription({ text }: { text?: string | null }) {
+  if (!text) {
+    return (
+      <p className="text-sm text-neutral-600 italic">
+        Premium streetwear piece crafted with heavyweight gauge fabric and signature aesthetics.
+      </p>
+    )
+  }
+
+  // Split into paragraph blocks
+  const blocks = text.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean)
+
+  return (
+    <div className="space-y-3.5 text-sm leading-relaxed text-neutral-800">
+      {blocks.map((block, idx) => {
+        const lines = block.split('\n').map((l) => l.trim()).filter(Boolean)
+        const isAllBullets = lines.length > 0 && lines.every((l) => /^[-*•]\s+/.test(l))
+
+        if (isAllBullets) {
+          return (
+            <ul key={idx} className="space-y-1.5 pl-4 list-disc marker:text-black">
+              {lines.map((l, lIdx) => {
+                const cleaned = l.replace(/^[-*•]\s+/, '')
+                return (
+                  <li key={lIdx} className="text-neutral-800">
+                    {renderFormattedInline(cleaned)}
+                  </li>
+                )
+              })}
+            </ul>
+          )
+        }
+
+        // Mixed block containing some bullet lines
+        const hasBullets = lines.some((l) => /^[-*•]\s+/.test(l))
+        if (hasBullets) {
+          return (
+            <div key={idx} className="space-y-2">
+              {lines.map((line, lineIdx) => {
+                if (/^[-*•]\s+/.test(line)) {
+                  const cleaned = line.replace(/^[-*•]\s+/, '')
+                  return (
+                    <div key={lineIdx} className="flex items-start gap-2 pl-2">
+                      <span className="text-black font-bold leading-none mt-1.5">•</span>
+                      <span>{renderFormattedInline(cleaned)}</span>
+                    </div>
+                  )
+                }
+                return (
+                  <p key={lineIdx} className="text-neutral-800">
+                    {renderFormattedInline(line)}
+                  </p>
+                )
+              })}
+            </div>
+          )
+        }
+
+        return (
+          <p key={idx} className="text-neutral-800">
+            {renderFormattedInline(block)}
+          </p>
+        )
+      })}
     </div>
   )
 }
