@@ -253,12 +253,12 @@ export default function ProductPage() {
               </div>
             )}
 
-            {/* Main Single Display Image (Frame only, no text overlays) */}
-            <div className="flex-1 aspect-[3/4] bg-neutral-100 overflow-hidden rounded-md border border-neutral-200 relative group">
+            {/* Main Single Display Image (Frame only, no hover scaling effect) */}
+            <div className="flex-1 aspect-[3/4] bg-neutral-100 overflow-hidden rounded-md border border-neutral-200 relative">
               <img
                 src={selectedImage || catalogImages[0]?.image_url || '/assets/wenzy_front_texture.png'}
                 alt={product.name}
-                className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover object-top"
               />
             </div>
           </div>
