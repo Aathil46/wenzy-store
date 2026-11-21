@@ -202,6 +202,16 @@ export default function CollectionsSection() {
     }
   }, [])
 
+  // Helper to get products for a specific collection
+  const getProductsForCollection = (col: Collection) => {
+    const filtered = allProducts.filter((p) => p.collection_id === col.id)
+    if (filtered.length === 0 && (col.slug === 'trending' || col.slug === 'trend')) {
+      const featured = allProducts.filter((p) => p.is_featured || p.is_new)
+      return featured.length > 0 ? featured : allProducts.slice(0, 8)
+    }
+    return filtered
+  }
+
   // Filter products by currently active collection tab
   const displayProducts = useMemo(() => {
     if (!activeTab) return allProducts.slice(0, 8)
@@ -209,13 +219,7 @@ export default function CollectionsSection() {
     // Check if selected tab is a collection
     const activeCol = collections.find((c) => c.id === activeTab)
     if (activeCol) {
-      const filtered = allProducts.filter((p) => p.collection_id === activeCol.id)
-      // If collection is Trending / Trend and has no direct assignment, fallback to featured/new items
-      if (filtered.length === 0 && (activeCol.slug === 'trending' || activeCol.slug === 'trend')) {
-        const featured = allProducts.filter((p) => p.is_featured || p.is_new)
-        return featured.length > 0 ? featured : allProducts.slice(0, 8)
-      }
-      return filtered
+      return getProductsForCollection(activeCol)
     }
 
     if (activeTab === 'trending') {
@@ -226,6 +230,11 @@ export default function CollectionsSection() {
     return allProducts.slice(0, 8)
   }, [activeTab, collections, allProducts])
 
+  // Remaining collections not currently selected (preserving admin ordering)
+  const otherCollections = useMemo(() => {
+    return collections.filter((c) => c.id !== activeTab && c.slug !== activeTab)
+  }, [collections, activeTab])
+
   // Don't render empty section
   if (!loading && collections.length === 0 && allProducts.length === 0) return null
 
@@ -233,7 +242,7 @@ export default function CollectionsSection() {
     <section className="py-12 md:py-16 bg-white border-t border-neutral-200">
       <div className="wrap">
         {/* Section Heading */}
-        <div className="mb-6 md:mb-8">
+        <div id="collections-section-header" className="mb-6 md:mb-8 scroll-mt-24">
           <h2 className="font-heading font-black text-2xl md:text-3xl uppercase tracking-tight text-black">
             Collections
           </h2>
@@ -290,6 +299,64 @@ export default function CollectionsSection() {
             {displayProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
+          </div>
+        )}
+
+        {/* OTHER COLLECTIONS (Displayed after selected collection's products in admin order) */}
+        {!loading && otherCollections.length > 0 && (
+          <div className="mt-14 md:mt-20 pt-10 md:pt-14 border-t border-neutral-200">
+            {/* Section Heading: OTHER COLLECTIONS */}
+            <div className="mb-8 md:mb-10">
+              <h2 className="font-heading font-black text-2xl md:text-3xl uppercase tracking-tight text-black">
+                Other Collections
+              </h2>
+              <div className="w-12 h-0.5 bg-black mt-2" />
+            </div>
+
+            {/* Remaining collections rendered in exact admin order */}
+            <div className="space-y-12 md:space-y-16">
+              {otherCollections.map((col) => {
+                const colProducts = getProductsForCollection(col)
+                return (
+                  <div key={col.id} className="space-y-4">
+                    <div className="flex items-center justify-between border-b border-neutral-200 pb-2.5">
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-heading font-black text-base sm:text-lg uppercase tracking-wider text-black">
+                          {col.name}
+                        </h3>
+                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                          ({colProducts.length} {colProducts.length === 1 ? 'piece' : 'pieces'})
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTab(col.id)
+                          document.getElementById('collections-section-header')?.scrollIntoView({ behavior: 'smooth' })
+                        }}
+                        className="text-xs font-bold uppercase tracking-wider text-neutral-500 hover:text-black transition-colors cursor-pointer"
+                      >
+                        View In Tabs ↑
+                      </button>
+                    </div>
+
+                    {colProducts.length > 0 ? (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+                        {colProducts.map((product) => (
+                          <ProductCard key={product.id} product={product} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="py-6 px-4 text-center bg-neutral-50 rounded-lg border border-dashed border-neutral-200">
+                        <p className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+                          No products in this collection yet
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
