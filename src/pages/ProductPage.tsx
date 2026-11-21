@@ -847,14 +847,6 @@ export default function ProductPage() {
               {openAccordions.description && (
                 <div className="pt-3.5 animate-fade-in">
                   <FormattedDescription text={product.description} />
-                  {product.details && (product.details.fabric || product.details.gsm || product.details.fit || product.details.care) && (
-                    <ul className="list-disc pl-5 space-y-1 text-neutral-700 text-xs pt-3 border-t border-neutral-100 mt-3">
-                      {product.details.fabric && <li><strong className="font-bold text-black">Fabric:</strong> {product.details.fabric}</li>}
-                      {product.details.gsm && <li><strong className="font-bold text-black">Weight:</strong> {product.details.gsm} GSM Heavyweight</li>}
-                      {product.details.fit && <li><strong className="font-bold text-black">Fit:</strong> {product.details.fit}</li>}
-                      {product.details.care && <li><strong className="font-bold text-black">Care:</strong> {product.details.care}</li>}
-                    </ul>
-                  )}
                 </div>
               )}
             </div>

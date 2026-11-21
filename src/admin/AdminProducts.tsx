@@ -1008,40 +1008,6 @@ export default function AdminProducts() {
                   </div>
                 </div>
 
-                {/* Fabric & Fit Details */}
-                <div className="space-y-3 pt-3 border-t border-neutral-200">
-                  <div className="font-bold uppercase tracking-wider text-black">Specifications</div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-neutral-600 uppercase font-bold text-[10px] mb-1">Fabric</label>
-                      <input
-                        type="text"
-                        value={formData.fabric}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, fabric: e.target.value }))}
-                        className="input-field"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-neutral-600 uppercase font-bold text-[10px] mb-1">GSM Weight</label>
-                      <input
-                        type="number"
-                        value={formData.gsm}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, gsm: Number(e.target.value) }))}
-                        className="input-field"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-neutral-600 uppercase font-bold text-[10px] mb-1">Fit Type</label>
-                      <input
-                        type="text"
-                        value={formData.fit}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, fit: e.target.value }))}
-                        className="input-field"
-                      />
-                    </div>
-                  </div>
-                </div>
-
                 {/* WENZY RACK (Interactive Clothing Rail) Configuration */}
                 <div className="space-y-4 pt-4 border-t-2 border-neutral-900 bg-neutral-50 p-4 border rounded">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">

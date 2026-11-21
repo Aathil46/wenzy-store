@@ -28,41 +28,6 @@ export default function Home() {
       {/* 3. Collections / Shop the Edit section */}
       <CollectionsSection />
 
-      {/* 4. Fabric Engineering & Brand Specs */}
-      <section className="py-16 bg-neutral-900 text-white">
-        <div className="wrap grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="border-l-2 border-white pl-6 space-y-2">
-            <div className="font-accent text-3xl font-black">240+ GSM</div>
-            <div className="text-xs font-bold uppercase tracking-wider text-neutral-300">
-              Ultra-Dense French Terry
-            </div>
-            <p className="text-xs text-neutral-400 leading-relaxed">
-              Knitted from 100% long-staple combed cotton for substantial weight, clean drape, and lifelong durability.
-            </p>
-          </div>
-
-          <div className="border-l-2 border-white pl-6 space-y-2">
-            <div className="font-accent text-3xl font-black">ZERO BLEED</div>
-            <div className="text-xs font-bold uppercase tracking-wider text-neutral-300">
-              High-Density Screen Prints
-            </div>
-            <p className="text-xs text-neutral-400 leading-relaxed">
-              Curated artwork cured at 180°C with crack-resistant plastisol and soft-hand waterbased inks.
-            </p>
-          </div>
-
-          <div className="border-l-2 border-white pl-6 space-y-2">
-            <div className="font-accent text-3xl font-black">BOXY CUT</div>
-            <div className="text-xs font-bold uppercase tracking-wider text-neutral-300">
-              Tailored Drop-Shoulder Fit
-            </div>
-            <p className="text-xs text-neutral-400 leading-relaxed">
-              Proportionally structured chest and dropped armholes engineered for modern streetwear styling.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* 5. Verified Customer Proof */}
       <section className="py-16 md:py-20 border-t border-neutral-200">
         <div className="wrap">
